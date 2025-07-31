@@ -1,25 +1,30 @@
 // --- ea4-cleanquote Backend Server ---
-// This file contains a mock Express.js server with a real RentCast API
-// integration, plus mock services for Stripe checkout and Google Calendar booking.
+// This file runs the Express server, serving both the frontend files and
+// handling the API routes.
 
 // Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
-const axios = require('axios'); // You'll need to install this with npm install axios
+const axios = require('axios');
+const path = require('path');
 
 const app = express();
 const port = 3000;
 
 // --- Middleware ---
+// The cors middleware is no longer strictly necessary since the frontend and backend are on the same server,
+// but it's good practice to keep it for potential future changes.
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- RentCast API Service (Real Implementation) ---
+// --- Serve Frontend Files ---
+// This middleware serves the files from the 'frontend' directory.
+// You should ensure your index.html file is in a folder named 'frontend' at the same level as your 'backend' folder.
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// --- RentCast API Service ---
 const realEstateAPI = {
-    // IMPORTANT: Replace "YOUR_RENTCAST_API_KEY" with your actual API key.
-    // In a real application, you would load this from an environment variable
-    // for security, like: process.env.RENTCAST_API_KEY;
     apiKey: "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {
@@ -30,7 +35,6 @@ const realEstateAPI = {
             const apiUrl = `https://api.rentcast.io/v1/properties/search`;
 
             const requestBody = {
-                // The API's request format for searching properties
                 address: fullAddress
             };
 
@@ -41,20 +45,16 @@ const realEstateAPI = {
             
             const response = await axios.post(apiUrl, requestBody, { headers });
             
-            // Assuming the API returns an array of properties, we take the first one.
             const property = response.data[0];
 
             if (property && property.squareFootage) {
-                // Return the square footage if found
                 return { squareFootage: property.squareFootage };
             } else {
                 return null;
             }
 
         } catch (error) {
-            // Log the full error to help with debugging
             console.error('RentCast API lookup error:', error.response?.data || error.message);
-            // In a real application, you might want to return an error object.
             return null;
         }
     }
@@ -130,7 +130,6 @@ const mockCalendar = {
 };
 
 // --- Backend Route: Property Lookup with API ---
-// The route name is changed to be more accurate.
 app.post('/property-lookup', async (req, res) => {
     console.log('Received request to lookup property with API.');
     const address = req.body;
@@ -235,9 +234,6 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Export the app for use in other files or start server directly
-module.exports = app;
-
 // Start server if this file is run directly
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
@@ -247,5 +243,4 @@ if (require.main === module) {
     console.log(`GET /health - Health check`);
   });
 }
-
 
