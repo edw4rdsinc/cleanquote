@@ -162,9 +162,28 @@ app.post('/redfin', async (req, res) => {
     });
     
     console.log('Looking for search box...');
-    await page.waitForSelector('input[data-rf-test-id="search-box-input"], input[placeholder*="Enter an address"], input[name="searchInputBox"]', { timeout: 10000 });
+    const searchSelectors = [
+      'input[data-rf-test-id="search-box-input"]',
+      'input[placeholder*="Enter an address"]',
+      'input[name="searchInputBox"]',
+      'input#search-box-input',
+      '.search-input-box'
+    ];
+    let searchSelector = '';
+    for(const selector of searchSelectors) {
+      try {
+        await page.waitForSelector(selector, { timeout: 3000 });
+        searchSelector = selector;
+        break;
+      } catch (e) {
+        console.log(`Selector "${selector}" not found, trying next...`);
+      }
+    }
+
+    if (!searchSelector) {
+        throw new Error('Could not find search input box');
+    }
     
-    const searchSelector = 'input[data-rf-test-id="search-box-input"], input[placeholder*="Enter an address"], input[name="searchInputBox"]';
     await page.type(searchSelector, fullAddress);
     
     console.log('Submitting search...');
@@ -188,17 +207,36 @@ app.post('/redfin', async (req, res) => {
     } else {
       console.log('Search results page detected, looking for first listing...');
       
-      await page.waitForSelector('div[data-rf-test-id="mapListViewContainer"], .search-result-item, .SearchResultsList', { timeout: 10000 });
+      const listingSelectors = [
+        'div[data-rf-test-id="mapListViewContainer"]',
+        '.search-result-item',
+        '.SearchResultsList',
+        'a[href*="/home/"]'
+      ];
+      let listingContainerSelector = '';
+      for(const selector of listingSelectors) {
+        try {
+          await page.waitForSelector(selector, { timeout: 3000 });
+          listingContainerSelector = selector;
+          break;
+        } catch (e) {
+          console.log(`Listing selector "${selector}" not found, trying next...`);
+        }
+      }
+
+      if (!listingContainerSelector) {
+          throw new Error('Could not find search results listings');
+      }
       
-      const firstListingSelector = [
+      const firstListingLinkSelectors = [
         'a[data-rf-test-id="property-card-link"]',
         '.search-result-item a',
         '.SearchResultsList a',
         'a[href*="/home/"]'
       ];
-      
+
       let clicked = false;
-      for (const selector of firstListingSelector) {
+      for (const selector of firstListingLinkSelectors) {
         try {
           await page.waitForSelector(selector, { timeout: 3000 });
           await page.click(selector);
@@ -206,7 +244,7 @@ app.post('/redfin', async (req, res) => {
           console.log(`Clicked first listing using selector: ${selector}`);
           break;
         } catch (e) {
-          console.log(`Selector ${selector} not found, trying next...`);
+          console.log(`Selector "${selector}" not found, trying next...`);
           continue;
         }
       }
