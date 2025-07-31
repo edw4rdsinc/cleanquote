@@ -1,1 +1,249 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA4-CleanQuote - Step 3</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- EXIF.js library for reading photo metadata -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .message-box {
+            display: none; /* Initially hidden */
+        }
+        .photo-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 0.5rem; /* rounded-lg */
+            background-color: #f3f4f6; /* gray-100 */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 3: Upload Room Photos</h1>
+        <form id="photos-form" class="space-y-6">
+
+            <p class="text-gray-600 text-center">
+                Please upload one photo for each of the following rooms. All photos must be taken today.
+            </p>
+
+            <!-- Photo Upload Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                <!-- Kitchen Photo Upload -->
+                <div class="flex flex-col items-center space-y-2" data-room="kitchen">
+                    <label for="kitchen-photo" class="text-sm font-medium text-gray-700">Kitchen</label>
+                    <div class="relative w-full">
+                        <input type="file" id="kitchen-photo" name="kitchen" accept="image/*" class="sr-only" />
+                        <label for="kitchen-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <img id="preview-kitchen" src="" alt="Kitchen preview" class="photo-preview hidden">
+                            <span id="label-kitchen" class="text-gray-500 text-sm">Click to upload</span>
+                            <div id="status-kitchen" class="absolute inset-0 flex items-center justify-center hidden">
+                                <!-- Checkmark SVG for success -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </label>
+                    </div>
+                    <p id="error-kitchen" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                
+                <!-- Living Room Photo Upload -->
+                <div class="flex flex-col items-center space-y-2" data-room="living-room">
+                    <label for="living-room-photo" class="text-sm font-medium text-gray-700">Living Room</label>
+                    <div class="relative w-full">
+                        <input type="file" id="living-room-photo" name="living-room" accept="image/*" class="sr-only" />
+                        <label for="living-room-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <img id="preview-living-room" src="" alt="Living room preview" class="photo-preview hidden">
+                            <span id="label-living-room" class="text-gray-500 text-sm">Click to upload</span>
+                            <div id="status-living-room" class="absolute inset-0 flex items-center justify-center hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </label>
+                    </div>
+                    <p id="error-living-room" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+
+                <!-- Bathroom Photo Upload -->
+                <div class="flex flex-col items-center space-y-2" data-room="bathroom">
+                    <label for="bathroom-photo" class="text-sm font-medium text-gray-700">Main Bathroom</label>
+                    <div class="relative w-full">
+                        <input type="file" id="bathroom-photo" name="bathroom" accept="image/*" class="sr-only" />
+                        <label for="bathroom-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <img id="preview-bathroom" src="" alt="Bathroom preview" class="photo-preview hidden">
+                            <span id="label-bathroom" class="text-gray-500 text-sm">Click to upload</span>
+                            <div id="status-bathroom" class="absolute inset-0 flex items-center justify-center hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </label>
+                    </div>
+                    <p id="error-bathroom" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+
+                <!-- Bedroom Photo Upload -->
+                <div class="flex flex-col items-center space-y-2" data-room="bedroom">
+                    <label for="bedroom-photo" class="text-sm font-medium text-gray-700">A Bedroom</label>
+                    <div class="relative w-full">
+                        <input type="file" id="bedroom-photo" name="bedroom" accept="image/*" class="sr-only" />
+                        <label for="bedroom-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <img id="preview-bedroom" src="" alt="Bedroom preview" class="photo-preview hidden">
+                            <span id="label-bedroom" class="text-gray-500 text-sm">Click to upload</span>
+                            <div id="status-bedroom" class="absolute inset-0 flex items-center justify-center hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </label>
+                    </div>
+                    <p id="error-bedroom" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+            </div>
+
+            <!-- Next Button -->
+            <button
+                type="submit"
+                id="next-button"
+                disabled
+                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400"
+            >
+                Next
+            </button>
+        </form>
+
+        <!-- Message Box -->
+        <div id="message-box" class="message-box p-4 mt-4 rounded-lg text-center"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global object to store data across steps
+            window.cleanQuote = window.cleanQuote || {};
+            window.cleanQuote.photos = {}; // Use an object to store photos by room name
+
+            const form = document.getElementById('photos-form');
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+            const nextButton = document.getElementById('next-button');
+            const messageBox = document.getElementById('message-box');
+            
+            // Function to show a message in the message box
+            const showMessage = (text, type = 'success') => {
+                messageBox.textContent = text;
+                messageBox.style.display = 'block';
+                if (type === 'success') {
+                    messageBox.className = 'p-4 mt-4 rounded-lg bg-green-100 text-green-700 text-center';
+                } else {
+                    messageBox.className = 'p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center';
+                }
+            };
+
+            // Function to check if all photos have been successfully validated
+            const checkAllPhotosValid = () => {
+                const requiredRooms = ['kitchen', 'living-room', 'bathroom', 'bedroom'];
+                const allValid = requiredRooms.every(room => window.cleanQuote.photos[room] !== undefined);
+                nextButton.disabled = !allValid;
+            };
+
+            // Function to validate the EXIF date
+            const validatePhotoDate = (file, roomName) => {
+                return new Promise((resolve, reject) => {
+                    EXIF.getData(file, function() {
+                        const dateTimeOriginal = EXIF.getTag(this, 'DateTimeOriginal');
+                        
+                        // Get today's date in YYYY:MM:DD format
+                        const today = new Date();
+                        const todayDateString = `${today.getFullYear()}:${(today.getMonth() + 1).toString().padStart(2, '0')}:${today.getDate().toString().padStart(2, '0')}`;
+
+                        if (dateTimeOriginal) {
+                            // Extract the date part (YYYY:MM:DD) from the full DateTimeOriginal string
+                            const photoDate = dateTimeOriginal.split(' ')[0];
+                            if (photoDate === todayDateString) {
+                                resolve(true); // Photo is from today
+                            } else {
+                                reject(`Your ${roomName} photo must be taken today.`);
+                            }
+                        } else {
+                            // No EXIF data, assume it's an old or edited photo
+                            reject(`We couldn't verify the date of your ${roomName} photo. It must be a recent photo taken today.`);
+                        }
+                    });
+                });
+            };
+
+            // Event listener for each file input
+            fileInputs.forEach(input => {
+                input.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    const roomName = e.target.name;
+                    
+                    const previewElement = document.getElementById(`preview-${roomName}`);
+                    const statusElement = document.getElementById(`status-${roomName}`);
+                    const labelElement = document.getElementById(`label-${roomName}`);
+                    const errorElement = document.getElementById(`error-${roomName}`);
+                    const formControlLabel = document.querySelector(`label[for="${e.target.id}"]`).parentNode;
+
+                    // Reset state
+                    previewElement.src = '';
+                    previewElement.classList.add('hidden');
+                    labelElement.classList.remove('hidden');
+                    statusElement.classList.add('hidden');
+                    errorElement.classList.add('hidden');
+                    formControlLabel.classList.remove('border-red-500', 'border-green-500');
+                    delete window.cleanQuote.photos[roomName];
+
+                    if (!file) {
+                        checkAllPhotosValid();
+                        return;
+                    }
+
+                    // Display a preview of the image
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        previewElement.src = event.target.result;
+                        previewElement.classList.remove('hidden');
+                        labelElement.classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Validate the EXIF data
+                    try {
+                        await validatePhotoDate(file, roomName);
+                        // Validation successful
+                        statusElement.classList.remove('hidden');
+                        formControlLabel.classList.add('border-green-500');
+                        window.cleanQuote.photos[roomName] = file;
+                    } catch (errorMessage) {
+                        // Validation failed
+                        errorElement.textContent = errorMessage;
+                        errorElement.classList.remove('hidden');
+                        formControlLabel.classList.add('border-red-500');
+                    }
+                    
+                    checkAllPhotosValid();
+                });
+            });
+
+            // Event listener for form submission
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                // At this point, all photos are already validated and stored.
+                // Log the data and prepare for the next step.
+                console.log('Photos uploaded and validated:', window.cleanQuote.photos);
+                showMessage("All photos are validated. Ready for Step 4: AI Cleanliness Rating.");
+            });
+        });
+    </script>
+</body>
+</html>
