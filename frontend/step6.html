@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA4-CleanQuote - Step 6</title>
+    <!-- Tailwind CSS via CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        /* Custom image styling for the cleaner photo */
+        .cleaner-photo {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #e5e7eb; /* gray-200 */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg">
+        <div class="text-center space-y-4">
+            <h1 class="text-4xl font-bold text-green-600">Booking Confirmed!</h1>
+            <p class="text-lg text-gray-700">Thank you, <span id="customer-name" class="font-semibold"></span>!</p>
+            <p class="text-gray-600">Your cleaning is officially booked.</p>
+        </div>
+
+        <div id="booking-details" class="mt-8 space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800 text-center">Your Appointment</h2>
+            <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 font-medium">Service Date:</span>
+                    <span id="booking-date-display" class="font-bold text-lg text-gray-900"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 font-medium">Time Slot:</span>
+                    <span id="booking-time-display" class="font-bold text-lg text-gray-900"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 font-medium">Estimated Time:</span>
+                    <span id="estimated-time-display" class="font-bold text-lg text-gray-900"></span>
+                </div>
+                <div class="flex justify-between items-center border-t border-gray-200 pt-2">
+                    <span class="text-gray-600 font-medium">Deposit Paid:</span>
+                    <span id="deposit-paid-display" class="font-bold text-lg text-green-600"></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="cleaner-intro" class="mt-8 text-center space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800">Meet Your Cleaner</h2>
+            <div id="cleaner-card" class="flex flex-col items-center bg-gray-50 p-6 rounded-lg space-y-3">
+                <!-- Cleaner photo will be dynamically added here -->
+                <img id="cleaner-photo" class="cleaner-photo" alt="Cleaner's Photo" src="https://placehold.co/96x96/E2E8F0/A0AEC0?text=Photo">
+                <div class="space-y-1">
+                    <p id="cleaner-name" class="text-xl font-bold text-gray-900"></p>
+                    <p id="cleaner-bio" class="text-gray-600"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 space-y-4">
+            <button
+                id="add-to-calendar-button"
+                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            >
+                Add to Calendar
+            </button>
+            <p class="text-center text-gray-500">
+                We’re looking forward to cleaning your home!
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global object to retrieve data from previous steps
+            const cleanQuote = window.cleanQuote || {};
+
+            // Mock data for demonstration purposes if previous steps were skipped
+            const mockData = {
+                // Booking information would come from a real calendar booking response
+                bookingDetails: {
+                    name: 'Jane Doe',
+                    depositAmount: 120,
+                    startTime: "2025-08-05T13:00:00Z",
+                    endTime: "2025-08-05T15:30:00Z"
+                },
+                address: {
+                    zip: '97229'
+                },
+                estimatedTime: '2.5 hours' // Added mock estimated time
+            };
+            
+            // Use mock data if the global object isn't populated
+            const bookingData = cleanQuote.bookingDetails || mockData.bookingDetails;
+            const customerZip = cleanQuote.address?.zip || mockData.address.zip;
+            const estimatedTime = cleanQuote.estimatedTime || mockData.estimatedTime;
+            
+            // --- UI Element References ---
+            const customerNameDisplay = document.getElementById('customer-name');
+            const bookingDateDisplay = document.getElementById('booking-date-display');
+            const bookingTimeDisplay = document.getElementById('booking-time-display');
+            const estimatedTimeDisplay = document.getElementById('estimated-time-display');
+            const depositPaidDisplay = document.getElementById('deposit-paid-display');
+            const cleanerPhoto = document.getElementById('cleaner-photo');
+            const cleanerName = document.getElementById('cleaner-name');
+            const cleanerBio = document.getElementById('cleaner-bio');
+            const addToCalendarButton = document.getElementById('add-to-calendar-button');
+            
+            // --- Mock Cleaner Data ---
+            const cleanerMap = {
+                '97229': {
+                    name: 'Monica T.',
+                    bio: 'Monica has 5 years of experience and loves making homes sparkle.',
+                    photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=Monica'
+                },
+                '97133': {
+                    name: 'Carlos G.',
+                    bio: 'Carlos is detail-obsessed and always arrives with a smile.',
+                    photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=Carlos'
+                }
+            };
+
+            const defaultCleaner = {
+                name: 'Our Team',
+                bio: 'An experienced member of our team will be there to make your home shine!',
+                photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=Cleaner'
+            };
+            
+            // --- Data Rendering ---
+            const renderConfirmation = () => {
+                if (!bookingData) {
+                    console.error('Booking data is missing. Cannot render confirmation page.');
+                    return;
+                }
+
+                // Display booking details
+                customerNameDisplay.textContent = bookingData.name;
+                depositPaidDisplay.textContent = `$${bookingData.depositAmount.toFixed(2)}`;
+                
+                const startDate = new Date(bookingData.startTime);
+                const endDate = new Date(bookingData.endTime);
+                
+                const dateFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'full' });
+                const timeFormatter = new Intl.DateTimeFormat('en-US', { timeStyle: 'short' });
+
+                bookingDateDisplay.textContent = dateFormatter.format(startDate);
+                bookingTimeDisplay.textContent = `${timeFormatter.format(startDate)} - ${timeFormatter.format(endDate)}`;
+                estimatedTimeDisplay.textContent = estimatedTime; // Display estimated time
+                
+                // Display cleaner info
+                const cleaner = cleanerMap[customerZip] || defaultCleaner;
+                cleanerPhoto.src = cleaner.photo;
+                cleanerName.textContent = cleaner.name;
+                cleanerBio.textContent = cleaner.bio;
+            };
+            
+            // --- Event Listeners ---
+            addToCalendarButton.addEventListener('click', () => {
+                const startDate = new Date(bookingData.startTime);
+                const endDate = new Date(bookingData.endTime);
+                const title = `Cleaning: ${bookingData.name} - ${cleanQuote.address.street || 'Your Home'}`;
+                
+                // This is a simple URL-based "Add to Calendar" link for Google Calendar
+                const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}/${endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`;
+
+                window.open(googleCalendarUrl, '_blank');
+            });
+            
+            renderConfirmation();
+        });
+    </script>
+</body>
+</html>
