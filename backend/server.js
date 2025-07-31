@@ -1,17 +1,12 @@
 // --- ea4-cleanquote Backend Server ---
-// This file contains a mock Express.js server that includes a Puppeteer-based
-// web scraper for Redfin, plus mock services for Stripe checkout and
-// Google Calendar booking.
+// This file contains a mock Express.js server that simulates a RentCast API
+// lookup, plus mock services for Stripe checkout and Google Calendar booking.
 
 // Import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-
-// Use the stealth plugin to avoid bot detection
-puppeteer.use(StealthPlugin());
+const axios = require('axios'); // You'll need to install this with npm install axios
 
 const app = express();
 const port = 3000;
@@ -19,6 +14,53 @@ const port = 3000;
 // --- Middleware ---
 app.use(cors());
 app.use(bodyParser.json());
+
+// --- RentCast API Service (Real Implementation) ---
+const realEstateAPI = {
+    // IMPORTANT: Replace "YOUR_RENTCAST_API_KEY" with your actual API key.
+    // In a real application, you would load this from an environment variable
+    // for security, like: process.env.RENTCAST_API_KEY;
+    apiKey: "671796af0835434297f1c016b70353a1",
+
+    lookupProperty: async (address) => {
+        try {
+            console.log(`Making real RentCast API call for property: ${address.street}`);
+            
+            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
+            const apiUrl = `https://api.rentcast.io/v1/properties/search`;
+
+            const requestBody = {
+                // The API's request format for searching properties
+                address: fullAddress
+            };
+
+            const headers = {
+                'X-API-KEY': realEstateAPI.apiKey,
+                'Content-Type': 'application/json'
+            };
+            
+            // Making the actual API call using axios
+            // We'll replace the mock data with this real call.
+            const response = await axios.post(apiUrl, requestBody, { headers });
+            
+            // Assuming the API returns an array of properties, we take the first one.
+            const property = response.data[0];
+
+            if (property && property.squareFootage) {
+                // Return the square footage if found
+                return { squareFootage: property.squareFootage };
+            } else {
+                return null;
+            }
+
+        } catch (error) {
+            // Log the full error to help with debugging
+            console.error('RentCast API lookup error:', error.response?.data || error.message);
+            // In a real application, you might want to return an error object.
+            return null;
+        }
+    }
+};
 
 // --- MOCK Stripe Service ---
 const mockStripe = {
@@ -89,217 +131,28 @@ const mockCalendar = {
     }
 };
 
-// --- Puppeteer Scraper Helper Function ---
-async function extractSquareFootage(page) {
-  try {
-    const squareFootage = await page.evaluate(() => {
-      const text = document.body.innerText;
-      
-      const patterns = [
-        /(\d{1,3}(?:,\d{3})*)\s*(?:sq\.?\s*ft\.?|sqft|square\s*feet)/i,
-        /(\d{1,3}(?:,\d{3})*)\s*sq/i,
-        /square\s*footage[:\s]*(\d{1,3}(?:,\d{3})*)/i,
-        /(\d{1,3}(?:,\d{3})*)\s*square/i
-      ];
-      
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match && match[1]) {
-          const sqft = match[1].replace(/,/g, '');
-          const num = parseInt(sqft);
-          
-          if (num >= 100 && num <= 50000) {
-            return num;
-          }
-        }
-      }
-      
-      return null;
-    });
-    
-    return squareFootage;
-    
-  } catch (error) {
-    console.error('Error extracting square footage:', error);
-    return null;
-  }
-}
-
-// --- Backend Route: Redfin Property Lookup with Puppeteer Scraper ---
+// --- Backend Route: Redfin Property Lookup with API ---
 app.post('/redfin', async (req, res) => {
-  let browser = null;
-  
-  try {
-    const { street, city, state, zip } = req.body;
-    
-    if (!street || !city || !state || !zip) {
-      return res.status(400).json({
-        error: 'Missing required fields: street, city, state, zip'
-      });
-    }
-    
-    const fullAddress = `${street}, ${city}, ${state} ${zip}`;
-    console.log(`Searching for property: ${fullAddress}`);
-    
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
-      ]
-    });
-    
-    const page = await browser.newPage();
-    
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-    
-    page.setDefaultTimeout(15000);
-    page.setDefaultNavigationTimeout(15000);
-    
-    console.log('Navigating to Redfin...');
-    await page.goto('https://www.redfin.com', { 
-      waitUntil: 'networkidle2',
-      timeout: 15000 
-    });
-    
-    // Attempt to find the search box with a more robust set of selectors
-    console.log('Looking for search box...');
-    const searchSelectors = [
-      'input[data-rf-test-id="search-box-input"]',
-      'input[placeholder*="Enter an address"]',
-      'input[name="searchInputBox"]',
-      'input#search-box-input',
-      '.search-input-box'
-    ];
-    let searchSelector = '';
-    for(const selector of searchSelectors) {
-      try {
-        await page.waitForSelector(selector, { timeout: 3000 });
-        searchSelector = selector;
-        break;
-      } catch (e) {
-        console.log(`Selector "${selector}" not found, trying next...`);
-      }
+    console.log('Received request to lookup property with API.');
+    const address = req.body;
+
+    if (!address.street || !address.city || !address.state || !address.zip) {
+        return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    if (!searchSelector) {
-        throw new Error('Could not find search input box');
-    }
-    
-    await page.type(searchSelector, fullAddress);
-    
-    console.log('Submitting search...');
     try {
-      await page.click('button[data-rf-test-id="search-button"], button[type="submit"]');
-    } catch (e) {
-      await page.keyboard.press('Enter');
-    }
-    
-    console.log('Waiting for results...');
-    await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-    
-    const currentUrl = page.url();
-    console.log(`Current URL: ${currentUrl}`);
-    
-    let squareFootage = null;
-    
-    if (currentUrl.includes('/home/')) {
-      console.log('Direct property page detected, extracting square footage...');
-      squareFootage = await extractSquareFootage(page);
-    } else {
-      console.log('Search results page detected, looking for first listing...');
-      
-      const listingSelectors = [
-        'div[data-rf-test-id="mapListViewContainer"]',
-        '.search-result-item',
-        '.SearchResultsList',
-        'a[href*="/home/"]'
-      ];
-      let listingContainerSelector = '';
-      for(const selector of listingSelectors) {
-        try {
-          await page.waitForSelector(selector, { timeout: 3000 });
-          listingContainerSelector = selector;
-          break;
-        } catch (e) {
-          console.log(`Listing selector "${selector}" not found, trying next...`);
+        const propertyData = await realEstateAPI.lookupProperty(address);
+        if (propertyData) {
+            console.log(`Property data found via API for: ${address.street}`);
+            res.status(200).json(propertyData);
+        } else {
+            console.log(`Property not found via API for: ${address.street}`);
+            res.status(404).json({ error: 'Property not found via API lookup' });
         }
-      }
-
-      if (!listingContainerSelector) {
-          throw new Error('Could not find search results listings');
-      }
-      
-      const firstListingLinkSelectors = [
-        'a[data-rf-test-id="property-card-link"]',
-        '.search-result-item a',
-        '.SearchResultsList a',
-        'a[href*="/home/"]'
-      ];
-
-      let clicked = false;
-      for (const selector of firstListingLinkSelectors) {
-        try {
-          await page.waitForSelector(selector, { timeout: 3000 });
-          await page.click(selector);
-          clicked = true;
-          console.log(`Clicked first listing using selector: ${selector}`);
-          break;
-        } catch (e) {
-          console.log(`Selector "${selector}" not found, trying next...`);
-          continue;
-        }
-      }
-      
-      if (!clicked) {
-        throw new Error('Could not find any property listings to click');
-      }
-      
-      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-      
-      console.log('Extracting square footage from property detail page...');
-      squareFootage = await extractSquareFootage(page);
+    } catch (error) {
+        console.error('API lookup error:', error.message);
+        res.status(500).json({ error: 'Failed to perform API property lookup' });
     }
-    
-    if (squareFootage) {
-      console.log(`Found square footage: ${squareFootage}`);
-      res.json({ squareFootage: parseInt(squareFootage) });
-    } else {
-      res.status(404).json({ 
-        error: 'Square footage not found on property page',
-        address: fullAddress 
-      });
-    }
-    
-  } catch (error) {
-    console.error('Error scraping Redfin:', error.message);
-    
-    if (error.message.includes('timeout') || error.message.includes('Navigation timeout')) {
-      res.status(408).json({ 
-        error: 'Request timeout - Redfin took too long to respond',
-        details: error.message 
-      });
-    } else if (error.message.includes('not found') || error.message.includes('Could not find')) {
-      res.status(404).json({ 
-        error: 'Property not found or page structure changed',
-        details: error.message 
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'Internal server error while scraping Redfin',
-        details: error.message 
-      });
-    }
-    
-  } finally {
-    if (browser) {
-      await browser.close();
-      console.log('Browser closed');
-    }
-  }
 });
 
 // --- Backend Route: Create Stripe Checkout Session ---
@@ -369,7 +222,7 @@ app.post('/calendar/book', async (req, res) => {
 
 // --- Health check endpoint ---
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Redfin Property Scraper' });
+  res.json({ status: 'OK', service: 'Real Estate API Lookup' });
 });
 
 /**
@@ -390,7 +243,7 @@ module.exports = app;
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`Redfin scraper server running on port ${PORT}`);
+    console.log(`Server running with API lookup on port ${PORT}`);
     console.log(`POST /redfin - Extract square footage from property addresses`);
     console.log(`GET /health - Health check`);
   });
