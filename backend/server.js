@@ -7,7 +7,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+// Use the stealth plugin to avoid bot detection
+puppeteer.use(StealthPlugin());
 
 const app = express();
 const port = 3000;
@@ -161,6 +165,7 @@ app.post('/redfin', async (req, res) => {
       timeout: 15000 
     });
     
+    // Attempt to find the search box with a more robust set of selectors
     console.log('Looking for search box...');
     const searchSelectors = [
       'input[data-rf-test-id="search-box-input"]',
@@ -390,3 +395,4 @@ if (require.main === module) {
     console.log(`GET /health - Health check`);
   });
 }
+
