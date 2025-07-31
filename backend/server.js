@@ -18,6 +18,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // --- Serve Frontend Files ---
+// This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // --- RentCast API Service ---
@@ -231,8 +232,8 @@ app.use((error, req, res, next) => {
   });
 });
 
-// --- Catch-all route to serve index.html for all other GET requests ---
-app.get('*', (req, res) => {
+// --- Explicitly serve index.html for the root URL ---
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
 });
 
