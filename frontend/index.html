@@ -56,11 +56,7 @@
                         required
                         class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="" disabled selected>Select a state</option>
-                        <option value="CA">California</option>
-                        <option value="NY">New York</option>
-                        <option value="TX">Texas</option>
-                        <option value="FL">Florida</option>
+                        <option value="OR" selected>Oregon</option>
                     </select>
                 </div>
 
@@ -96,7 +92,13 @@
             const form = document.getElementById('address-form');
             const messageBox = document.getElementById('message-box');
             const submitButton = document.getElementById('submit-button');
-            
+
+            // List of valid ZIP codes for Oregon
+            const validZips = new Set([
+                "97005", "97006", "97007", "97008", "97075", "97076", "97077", "97223", "97225", "97229",
+                "97133", "97003", "97078", "97123", "97124", "97129", "97291"
+            ]);
+
             // Function to show a message in the message box
             const showMessage = (text, type = 'error') => {
                 messageBox.textContent = text;
@@ -111,7 +113,7 @@
             // Event listener for form submission
             form.addEventListener('submit', async (e) => {
                 e.preventDefault(); // Prevent default form submission
-                
+
                 // Disable button and show loading state
                 submitButton.textContent = 'Checking...';
                 submitButton.disabled = true;
@@ -126,13 +128,19 @@
                     zip: formData.get('zip')
                 };
 
+                // ZIP code validation
+                if (!validZips.has(address.zip)) {
+                    showMessage("Sorry, we do not serve this ZIP code. Please contact us for a custom quote.");
+                    submitButton.textContent = 'Check Property';
+                    submitButton.disabled = false;
+                    return;
+                }
+
                 // Create a mock URL for the fetch call
-                // In a real application, this would be a real backend endpoint
                 const mockBackendUrl = '/redfin';
 
                 try {
                     // Simulate a fetch call to the backend
-                    // This is a placeholder and will not actually connect to a backend
                     // We simulate a successful response for '123 Main St' and an error for other addresses
                     const response = await new Promise((resolve, reject) => {
                         setTimeout(() => {
@@ -153,7 +161,9 @@
                         showMessage(`Property verified! Square footage is ${sqft} sq ft. Ready for the next step.`, 'success');
                         
                         // For the real application, you would proceed to the next step here
-                        // For now, we'll just log and show a message.
+                        window.cleanQuote = window.cleanQuote || {};
+                        window.cleanQuote.squareFootage = sqft;
+                        window.cleanQuote.address = address;
                         console.log('Successfully retrieved square footage:', sqft);
                     } else {
                         throw new Error('Failed to retrieve data.');
@@ -172,3 +182,4 @@
     </script>
 </body>
 </html>
+
