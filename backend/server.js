@@ -1,6 +1,6 @@
 // --- ea4-cleanquote Backend Server ---
-// This file contains a mock Express.js server that simulates a RentCast API
-// lookup, plus mock services for Stripe checkout and Google Calendar booking.
+// This file contains a mock Express.js server with a real RentCast API
+// integration, plus mock services for Stripe checkout and Google Calendar booking.
 
 // Import required modules
 const express = require('express');
@@ -39,8 +39,6 @@ const realEstateAPI = {
                 'Content-Type': 'application/json'
             };
             
-            // Making the actual API call using axios
-            // We'll replace the mock data with this real call.
             const response = await axios.post(apiUrl, requestBody, { headers });
             
             // Assuming the API returns an array of properties, we take the first one.
@@ -132,6 +130,7 @@ const mockCalendar = {
 };
 
 // --- Backend Route: Redfin Property Lookup with API ---
+// This route now correctly calls the realEstateAPI service.
 app.post('/redfin', async (req, res) => {
     console.log('Received request to lookup property with API.');
     const address = req.body;
