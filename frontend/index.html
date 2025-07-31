@@ -89,17 +89,18 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Global object to store data across steps
+            window.cleanQuote = window.cleanQuote || {};
+            
             const form = document.getElementById('address-form');
             const messageBox = document.getElementById('message-box');
             const submitButton = document.getElementById('submit-button');
 
-            // List of valid ZIP codes for Oregon
             const validZips = new Set([
                 "97005", "97006", "97007", "97008", "97075", "97076", "97077", "97223", "97225", "97229",
                 "97133", "97003", "97078", "97123", "97124", "97129", "97291"
             ]);
 
-            // Function to show a message in the message box
             const showMessage = (text, type = 'error') => {
                 messageBox.textContent = text;
                 messageBox.style.display = 'block';
@@ -110,16 +111,13 @@
                 }
             };
 
-            // Event listener for form submission
             form.addEventListener('submit', async (e) => {
-                e.preventDefault(); // Prevent default form submission
+                e.preventDefault();
 
-                // Disable button and show loading state
                 submitButton.textContent = 'Checking...';
                 submitButton.disabled = true;
                 messageBox.style.display = 'none';
 
-                // Gather form data
                 const formData = new FormData(form);
                 const address = {
                     street: formData.get('street'),
@@ -128,7 +126,6 @@
                     zip: formData.get('zip')
                 };
 
-                // ZIP code validation
                 if (!validZips.has(address.zip)) {
                     showMessage("Sorry, we do not serve this ZIP code. Please contact us for a custom quote.");
                     submitButton.textContent = 'Check Property';
@@ -136,44 +133,34 @@
                     return;
                 }
 
-                // Create a mock URL for the fetch call
-                const mockBackendUrl = '/redfin';
+                // --- This is the updated fetch call to your backend ---
+                const backendUrl = 'http://localhost:3000/redfin';
 
                 try {
-                    // Simulate a fetch call to the backend
-                    // We simulate a successful response for '123 Main St' and an error for other addresses
-                    const response = await new Promise((resolve, reject) => {
-                        setTimeout(() => {
-                            if (address.street.toLowerCase() === '123 main st') {
-                                resolve({
-                                    ok: true,
-                                    json: () => Promise.resolve({ squareFootage: 1530 })
-                                });
-                            } else {
-                                reject(new Error('Property not found'));
-                            }
-                        }, 1000); // Simulate a 1-second network delay
+                    const response = await fetch(backendUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(address)
                     });
 
                     if (response.ok) {
                         const data = await response.json();
-                        let sqft = data.squareFootage; // Store square footage in a variable
+                        let sqft = data.squareFootage;
                         showMessage(`Property verified! Square footage is ${sqft} sq ft. Ready for the next step.`, 'success');
                         
-                        // For the real application, you would proceed to the next step here
-                        window.cleanQuote = window.cleanQuote || {};
                         window.cleanQuote.squareFootage = sqft;
                         window.cleanQuote.address = address;
                         console.log('Successfully retrieved square footage:', sqft);
                     } else {
-                        throw new Error('Failed to retrieve data.');
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to verify property online.');
                     }
-
                 } catch (error) {
                     console.error('Fetch error:', error);
                     showMessage("We couldn't verify your property online. Please call us to schedule.");
                 } finally {
-                    // Re-enable the button
                     submitButton.textContent = 'Check Property';
                     submitButton.disabled = false;
                 }
@@ -182,4 +169,3 @@
     </script>
 </body>
 </html>
-
