@@ -10,7 +10,7 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // --- Middleware ---
 // The cors middleware is no longer strictly necessary since the frontend and backend are on the same server,
@@ -25,6 +25,9 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 // --- RentCast API Service ---
 const realEstateAPI = {
+    // IMPORTANT: Replace "YOUR_RENTCAST_API_KEY" with your actual API key.
+    // In a real application, you would load this from an environment variable
+    // for security, like: process.env.RENTCAST_API_KEY;
     apiKey: "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {
@@ -234,6 +237,12 @@ app.use((error, req, res, next) => {
   });
 });
 
+// --- Catch-all route to serve index.html for all other GET requests ---
+app.get('*', (req, res) => {
+    // This will serve your index.html file for any GET request that doesn't match a route above.
+    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+});
+
 // Start server if this file is run directly
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
@@ -243,4 +252,3 @@ if (require.main === module) {
     console.log(`GET /health - Health check`);
   });
 }
-
