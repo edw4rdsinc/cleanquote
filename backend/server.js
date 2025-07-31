@@ -7,7 +7,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
-const puppeteer = require('puppeteer'); // Needed for the web scraper
+const puppeteer = require('puppeteer');
 
 const app = express();
 const port = 3000;
@@ -86,7 +86,6 @@ const mockCalendar = {
 };
 
 // --- Puppeteer Scraper Helper Function ---
-// This function is moved from the user-provided 'redfin.js'
 async function extractSquareFootage(page) {
   try {
     const squareFootage = await page.evaluate(() => {
@@ -122,8 +121,7 @@ async function extractSquareFootage(page) {
   }
 }
 
-// --- NEW Backend Route: Redfin Property Lookup with Puppeteer Scraper ---
-// This code is based on the user-provided 'redfin.js' file.
+// --- Backend Route: Redfin Property Lookup with Puppeteer Scraper ---
 app.post('/redfin', async (req, res) => {
   let browser = null;
   
