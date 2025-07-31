@@ -10,24 +10,18 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000;
+// Change the port to something that is less likely to be in use.
+const port = process.env.PORT || 3001;
 
 // --- Middleware ---
-// The cors middleware is no longer strictly necessary since the frontend and backend are on the same server,
-// but it's good practice to keep it for potential future changes.
 app.use(cors());
 app.use(bodyParser.json());
 
 // --- Serve Frontend Files ---
-// This middleware serves the files from the 'frontend' directory.
-// You should ensure your index.html file is in a folder named 'frontend' at the same level as your 'backend' folder.
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // --- RentCast API Service ---
 const realEstateAPI = {
-    // IMPORTANT: Replace "YOUR_RENTCAST_API_KEY" with your actual API key.
-    // In a real application, you would load this from an environment variable
-    // for security, like: process.env.RENTCAST_API_KEY;
     apiKey: "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {
@@ -239,15 +233,14 @@ app.use((error, req, res, next) => {
 
 // --- Catch-all route to serve index.html for all other GET requests ---
 app.get('*', (req, res) => {
-    // This will serve your index.html file for any GET request that doesn't match a route above.
     res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
 });
 
 // Start server if this file is run directly
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Server running with API lookup on port ${PORT}`);
+  app.listen(port, () => {
+    console.log(`Server running with API lookup on port ${port}`);
+    console.log(`To access the application, open your browser and go to: http://localhost:${port}`);
     console.log(`POST /property-lookup - Extract square footage from property addresses`);
     console.log(`GET /health - Health check`);
   });
