@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA4-CleanQuote - Step 5</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .message-box {
+            display: none; /* Initially hidden */
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #fff; /* White spinner */
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 5: Quote Preview</h1>
+        
+        <!-- Quote Summary Section -->
+        <div id="quote-summary-view" class="space-y-6">
+            <h2 class="text-2xl font-bold text-gray-800 text-center">Your Estimate Details</h2>
+
+            <!-- Summary items -->
+            <div class="bg-gray-50 p-4 rounded-lg space-y-3">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <span class="text-gray-700 font-medium">Property Size:</span>
+                    <span id="sqft-display" class="font-bold text-lg text-gray-900"></span>
+                </div>
+                <div class="flex justify-between items-center border-b pb-2">
+                    <span class="text-gray-700 font-medium">Hard Flooring:</span>
+                    <span id="floor-type-display" class="font-bold text-lg text-gray-900"></span>
+                </div>
+                <div>
+                    <span class="text-gray-700 font-medium block mb-1">Services Selected:</span>
+                    <ul id="services-display" class="list-disc list-inside space-y-1 ml-4 text-gray-600">
+                        <!-- Services will be dynamically added here -->
+                    </ul>
+                </div>
+                <div>
+                    <span class="text-gray-700 font-medium block mb-1">Cleanliness Ratings:</span>
+                    <div id="cleanliness-display" class="space-y-1 ml-4 text-gray-600">
+                        <!-- Cleanliness scores will be dynamically added here -->
+                    </div>
+                </div>
+                <div class="flex justify-between items-center border-t border-b py-3 mt-4">
+                    <span class="text-gray-700 font-medium">Estimated Time:</span>
+                    <span id="time-display" class="font-bold text-lg text-gray-900"></span>
+                </div>
+            </div>
+
+            <!-- Price Breakdown Section -->
+            <div class="bg-gray-100 p-6 rounded-lg space-y-3">
+                <div class="flex justify-between items-center text-xl">
+                    <span class="font-bold text-gray-800">Total Price:</span>
+                    <span id="total-price-display" class="font-extrabold text-blue-600"></span>
+                </div>
+                <div class="flex justify-between items-center text-lg pt-2 border-t border-gray-300">
+                    <span class="font-semibold text-gray-800">50% Deposit Required:</span>
+                    <span id="deposit-display" class="font-bold text-green-600"></span>
+                </div>
+            </div>
+
+            <!-- Payment Button -->
+            <button
+                id="payment-button"
+                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            >
+                Book & Pay Deposit
+            </button>
+        </div>
+
+        <!-- Loading state -->
+        <div id="loading-view" class="hidden flex flex-col items-center justify-center space-y-4">
+            <div class="spinner"></div>
+            <p class="text-lg text-gray-600 font-medium text-center">Redirecting to Stripe...</p>
+        </div>
+        
+        <!-- Error state -->
+        <div id="error-view" class="hidden">
+            <div class="message-box p-4 rounded-lg bg-red-100 text-red-700 text-center">
+                <p id="error-message"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global object to store data across steps
+            window.cleanQuote = window.cleanQuote || {};
+
+            // Mock data for demonstration purposes if previous steps were skipped
+            const mockData = {
+                squareFootage: 1800,
+                services: ['Standard Clean', 'Deep Clean', 'Inside Fridge'],
+                floorType: 75,
+                cleanlinessScores: {
+                    kitchen: 3,
+                    livingRoom: 2,
+                    bathroom: 4,
+                    bedroom: 1,
+                },
+                // Mock user data for the Stripe checkout call
+                customerInfo: {
+                    name: 'Jane Doe',
+                    email: 'jane.doe@example.com',
+                    address: '123 Mock St, Anytown, CA 90210'
+                }
+            };
+            
+            // Use mock data if the global object isn't populated
+            if (!window.cleanQuote.squareFootage) {
+                window.cleanQuote = { ...mockData, ...window.cleanQuote };
+                console.log('Using mock data for demonstration. Please complete previous steps for real data.');
+            }
+
+            // --- UI Element References ---
+            const quoteSummaryView = document.getElementById('quote-summary-view');
+            const loadingView = document.getElementById('loading-view');
+            const errorView = document.getElementById('error-view');
+            const paymentButton = document.getElementById('payment-button');
+            const errorMessageElement = document.getElementById('error-message');
+
+            const sqftDisplay = document.getElementById('sqft-display');
+            const floorTypeDisplay = document.getElementById('floor-type-display');
+            const servicesDisplay = document.getElementById('services-display');
+            const cleanlinessDisplay = document.getElementById('cleanliness-display');
+            const timeDisplay = document.getElementById('time-display');
+            const totalPriceDisplay = document.getElementById('total-price-display');
+            const depositDisplay = document.getElementById('deposit-display');
+
+            // --- Service Pricing and Score Mappings ---
+            const servicePrices = {
+                'Standard Clean': 120,
+                'Deep Clean': 60,
+                'Inside Fridge': 20,
+                'Inside Oven': 20,
+                'Windows': 40
+            };
+            const cleanlinessDescriptions = {
+                1: 'Very Clean',
+                2: 'Clean',
+                3: 'Average Messiness',
+                4: 'Messy',
+                5: 'Very Messy'
+            };
+
+            // --- Calculation Logic ---
+            const calculateEstimate = () => {
+                const { squareFootage, services, cleanlinessScores } = window.cleanQuote;
+
+                // 1. Calculate base price from services
+                let basePrice = 0;
+                let deepCleanSelected = false;
+                let addonCount = 0;
+
+                services.forEach(service => {
+                    if (service === 'Standard Clean') basePrice += servicePrices['Standard Clean'];
+                    if (service === 'Deep Clean') {
+                        basePrice += servicePrices['Deep Clean'];
+                        deepCleanSelected = true;
+                    }
+                    if (service !== 'Standard Clean' && service !== 'Deep Clean') {
+                        basePrice += servicePrices[service] || 0;
+                        addonCount++;
+                    }
+                });
+
+                // Apply package discount logic
+                if (deepCleanSelected && addonCount >= 2) {
+                    const discount = basePrice * 0.10;
+                    basePrice -= discount;
+                }
+                
+                // 2. Calculate cleanliness surcharge
+                const scores = Object.values(cleanlinessScores);
+                const sumScores = scores.reduce((sum, score) => sum + score, 0);
+                const avgScore = sumScores / scores.length;
+                
+                // Surcharge: $10 per room for every point above "very clean" (score 1)
+                const cleanlinessSurcharge = (avgScore - 1) * 10 * scores.length;
+                
+                const totalPrice = basePrice + cleanlinessSurcharge;
+
+                // 3. Calculate estimated time
+                // Factor: 1 hour per 500 sqft. Factor is 1 for very clean, 1.5 for very messy
+                const cleanlinessFactor = 1 + (avgScore - 1) * (0.5 / 4); // Linearly scales from 1 to 1.5
+                const estimatedTimeHours = (squareFootage / 500) * cleanlinessFactor;
+                const estimatedTimeFormatted = `${estimatedTimeHours.toFixed(1)} hours`;
+
+                return {
+                    totalPrice: totalPrice,
+                    depositAmount: totalPrice / 2,
+                    estimatedTime: estimatedTimeFormatted
+                };
+            };
+
+            // --- Render Function ---
+            const renderEstimate = () => {
+                const { squareFootage, services, floorType, cleanlinessScores } = window.cleanQuote;
+                
+                // Handle cases where data is missing
+                if (!squareFootage || !services || !cleanlinessScores) {
+                    quoteSummaryView.classList.add('hidden');
+                    errorView.classList.remove('hidden');
+                    errorMessageElement.textContent = "Please complete all previous steps to see your estimate.";
+                    return;
+                }
+
+                // Populate the UI with data
+                sqftDisplay.textContent = `${squareFootage} sq ft`;
+                floorTypeDisplay.textContent = `${floorType}%`;
+
+                // Render services
+                servicesDisplay.innerHTML = '';
+                services.forEach(service => {
+                    const li = document.createElement('li');
+                    li.textContent = service;
+                    servicesDisplay.appendChild(li);
+                });
+
+                // Render cleanliness scores
+                cleanlinessDisplay.innerHTML = '';
+                for (const room in cleanlinessScores) {
+                    const score = cleanlinessScores[room];
+                    const description = cleanlinessDescriptions[score] || 'N/A';
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center';
+                    div.innerHTML = `
+                        <span class="capitalize">${room.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                        <span class="font-bold">${description}</span>
+                    `;
+                    cleanlinessDisplay.appendChild(div);
+                }
+
+                const { totalPrice, depositAmount, estimatedTime } = calculateEstimate();
+                timeDisplay.textContent = estimatedTime;
+                totalPriceDisplay.textContent = `$${totalPrice.toFixed(2)}`;
+                depositDisplay.textContent = `$${depositAmount.toFixed(2)}`;
+            };
+
+            // --- Event Listener for Payment ---
+            paymentButton.addEventListener('click', async () => {
+                const { totalPrice, depositAmount } = calculateEstimate();
+                const { name, email, address } = window.cleanQuote.customerInfo;
+
+                // Prepare the body for the fetch call
+                const requestBody = {
+                    name,
+                    email,
+                    address,
+                    total_price: totalPrice.toFixed(2),
+                    deposit_amount: depositAmount.toFixed(2)
+                };
+
+                // Show loading state
+                quoteSummaryView.classList.add('hidden');
+                loadingView.classList.remove('hidden');
+
+                const mockBackendUrl = '/stripe/create-checkout';
+
+                try {
+                    // Simulate a fetch call to the backend
+                    const response = await new Promise((resolve) => {
+                        setTimeout(() => {
+                            // Mock successful response with a checkout URL
+                            resolve({
+                                ok: true,
+                                json: () => Promise.resolve({
+                                    checkout_url: 'https://checkout.stripe.com/mock-session-123'
+                                })
+                            });
+                        }, 1500); // Simulate network delay
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.checkout_url) {
+                            window.location.href = data.checkout_url;
+                        } else {
+                            throw new Error('No checkout URL received.');
+                        }
+                    } else {
+                        throw new Error('Failed to create a Stripe checkout session.');
+                    }
+                } catch (error) {
+                    console.error('Payment error:', error);
+                    loadingView.classList.add('hidden');
+                    errorView.classList.remove('hidden');
+                    errorMessageElement.textContent = "There was an error processing your request. Please try again.";
+                }
+            });
+
+            // Initial render
+            renderEstimate();
+        });
+    </script>
+</body>
+</html>
