@@ -129,9 +129,9 @@ const mockCalendar = {
     }
 };
 
-// --- Backend Route: Redfin Property Lookup with API ---
-// This route now correctly calls the realEstateAPI service.
-app.post('/redfin', async (req, res) => {
+// --- Backend Route: Property Lookup with API ---
+// The route name is changed to be more accurate.
+app.post('/property-lookup', async (req, res) => {
     console.log('Received request to lookup property with API.');
     const address = req.body;
 
@@ -243,8 +243,9 @@ if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running with API lookup on port ${PORT}`);
-    console.log(`POST /redfin - Extract square footage from property addresses`);
+    console.log(`POST /property-lookup - Extract square footage from property addresses`);
     console.log(`GET /health - Health check`);
   });
 }
+
 
