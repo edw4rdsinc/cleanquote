@@ -21,101 +21,181 @@ app.use(bodyParser.json());
 // This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// --- RentCast API Service (CORRECTED VERSION) ---
+// --- Debug RentCast API - Let's try multiple approaches ---
 const realEstateAPI = {
-    // SECURITY FIX: Use environment variable for API key
     apiKey: process.env.RENTCAST_API_KEY || "671796af0835434297f1c016b70353a1",
 
-    lookupProperty: async (address) => {
+    // Method 1: Try the city/state approach from their example
+    testMethod1: async (address) => {
         try {
-            console.log(`Making RentCast API call for property: ${address.street}`);
-            
-            // CORRECTED: RentCast uses POST with request body, not GET with query params
+            console.log('\n=== METHOD 1: City/State query ===');
             const apiUrl = `https://api.rentcast.io/v1/properties`;
+            
+            const params = new URLSearchParams({
+                city: address.city,
+                state: address.state,
+                limit: 10
+            });
 
-            // Build the full address string
-            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
-
-            // CORRECTED: Use proper headers format for RentCast
             const headers = {
                 'X-Api-Key': realEstateAPI.apiKey,
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             };
-
-            // CORRECTED: Use POST with address in the request body
-            const requestBody = {
-                address: fullAddress
-            };
             
-            console.log('Making POST request to:', apiUrl);
-            console.log('Request body:', requestBody);
-            console.log('Headers:', headers);
+            const requestUrl = `${apiUrl}?${params.toString()}`;
+            console.log('Request URL:', requestUrl);
             
-            const response = await axios.post(apiUrl, requestBody, { headers });
+            const response = await axios.get(requestUrl, { headers });
+            console.log('SUCCESS - Status:', response.status);
+            console.log('Response length:', response.data?.length || 'not array');
             
-            console.log('API Response status:', response.status);
-            console.log('API Response data:', response.data);
-
-            // Handle the response - RentCast returns an array of properties
-            let properties = response.data;
-            
-            if (!Array.isArray(properties)) {
-                console.log('Response is not an array, checking for properties field');
-                if (properties && properties.properties && Array.isArray(properties.properties)) {
-                    properties = properties.properties;
-                } else {
-                    console.log('Unexpected response format:', typeof properties);
-                    return null;
-                }
-            }
-
-            if (properties.length === 0) {
-                console.log('No properties found in response');
-                return null;
-            }
-
-            // Take the first property from the results
-            const property = properties[0];
-            console.log('Property found:', Object.keys(property));
-
-            // RentCast uses 'squareFootage' field (based on their documentation)
-            if (property.squareFootage) {
-                console.log('Square footage found:', property.squareFootage);
-                return { squareFootage: property.squareFootage };
-            } else {
-                console.log('Property found but no square footage data. Available fields:', Object.keys(property));
-                // Log a few key fields to help debug
-                console.log('Sample property data:', {
-                    formattedAddress: property.formattedAddress,
-                    propertyType: property.propertyType,
-                    bedrooms: property.bedrooms,
-                    bathrooms: property.bathrooms,
-                    yearBuilt: property.yearBuilt
-                });
-                return null;
-            }
-
+            return response.data;
         } catch (error) {
-            // Enhanced error handling and logging
-            console.error('RentCast API lookup error:');
-            console.error('Status:', error.response?.status);
-            console.error('Status Text:', error.response?.statusText);
-            console.error('Response Data:', error.response?.data);
-            console.error('Request URL:', error.config?.url);
-            console.error('Request Method:', error.config?.method);
-            console.error('Request Headers:', error.config?.headers);
-            console.error('Request Body:', error.config?.data);
-            console.error('Full Error:', error.message);
-            
-            // Return error info for debugging
-            return {
-                error: true,
-                status: error.response?.status,
-                message: error.response?.data?.message || error.message,
-                details: error.response?.data
-            };
+            console.log('METHOD 1 FAILED:', error.response?.status, error.response?.data);
+            return null;
         }
+    },
+
+    // Method 2: Try with full address parameter
+    testMethod2: async (address) => {
+        try {
+            console.log('\n=== METHOD 2: Full address query ===');
+            const apiUrl = `https://api.rentcast.io/v1/properties`;
+            
+            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
+            const params = new URLSearchParams({
+                address: fullAddress
+            });
+
+            const headers = {
+                'X-Api-Key': realEstateAPI.apiKey,
+                'Accept': 'application/json'
+            };
+            
+            const requestUrl = `${apiUrl}?${params.toString()}`;
+            console.log('Request URL:', requestUrl);
+            
+            const response = await axios.get(requestUrl, { headers });
+            console.log('SUCCESS - Status:', response.status);
+            console.log('Response length:', response.data?.length || 'not array');
+            
+            return response.data;
+        } catch (error) {
+            console.log('METHOD 2 FAILED:', error.response?.status, error.response?.data);
+            return null;
+        }
+    },
+
+    // Method 3: Try individual address components
+    testMethod3: async (address) => {
+        try {
+            console.log('\n=== METHOD 3: Individual components ===');
+            const apiUrl = `https://api.rentcast.io/v1/properties`;
+            
+            const params = new URLSearchParams({
+                street: address.street,
+                city: address.city,
+                state: address.state,
+                zipCode: address.zip,
+                limit: 5
+            });
+
+            const headers = {
+                'X-Api-Key': realEstateAPI.apiKey,
+                'Accept': 'application/json'
+            };
+            
+            const requestUrl = `${apiUrl}?${params.toString()}`;
+            console.log('Request URL:', requestUrl);
+            
+            const response = await axios.get(requestUrl, { headers });
+            console.log('SUCCESS - Status:', response.status);
+            console.log('Response length:', response.data?.length || 'not array');
+            
+            return response.data;
+        } catch (error) {
+            console.log('METHOD 3 FAILED:', error.response?.status, error.response?.data);
+            return null;
+        }
+    },
+
+    // Method 4: Test the API key with their documented example
+    testApiKey: async () => {
+        try {
+            console.log('\n=== METHOD 4: API Key test with Austin, TX ===');
+            const apiUrl = `https://api.rentcast.io/v1/properties`;
+            
+            const params = new URLSearchParams({
+                city: 'Austin',
+                state: 'TX',
+                limit: 1
+            });
+
+            const headers = {
+                'X-Api-Key': realEstateAPI.apiKey,
+                'Accept': 'application/json'
+            };
+            
+            const requestUrl = `${apiUrl}?${params.toString()}`;
+            console.log('Request URL:', requestUrl);
+            
+            const response = await axios.get(requestUrl, { headers });
+            console.log('API KEY WORKS! - Status:', response.status);
+            console.log('Response length:', response.data?.length || 'not array');
+            
+            return response.data;
+        } catch (error) {
+            console.log('API KEY TEST FAILED:', error.response?.status, error.response?.data);
+            return null;
+        }
+    },
+
+    lookupProperty: async (address) => {
+        console.log('\n=================== DEBUGGING RENTCAST API ===================');
+        
+        // First test if the API key works at all
+        const keyTest = await realEstateAPI.testApiKey();
+        if (!keyTest) {
+            console.log('❌ API key test failed - there may be an issue with your API key or subscription');
+            return { error: true, message: 'API key validation failed' };
+        }
+        
+        console.log('✅ API key works! Trying different search methods...');
+        
+        // Try method 1: City/State (most likely to work)
+        const result1 = await realEstateAPI.testMethod1(address);
+        if (result1 && result1.length > 0) {
+            console.log('✅ METHOD 1 SUCCESS - Found properties with city/state search');
+            // Look for the specific address in results
+            const targetProperty = result1.find(prop => 
+                prop.formattedAddress && 
+                prop.formattedAddress.toLowerCase().includes(address.street.toLowerCase())
+            );
+            if (targetProperty && targetProperty.squareFootage) {
+                return { squareFootage: targetProperty.squareFootage };
+            }
+        }
+        
+        // Try method 2: Full address
+        const result2 = await realEstateAPI.testMethod2(address);
+        if (result2 && result2.length > 0) {
+            console.log('✅ METHOD 2 SUCCESS - Found properties with full address search');
+            if (result2[0].squareFootage) {
+                return { squareFootage: result2[0].squareFootage };
+            }
+        }
+        
+        // Try method 3: Individual components
+        const result3 = await realEstateAPI.testMethod3(address);
+        if (result3 && result3.length > 0) {
+            console.log('✅ METHOD 3 SUCCESS - Found properties with component search');
+            if (result3[0].squareFootage) {
+                return { squareFootage: result3[0].squareFootage };
+            }
+        }
+        
+        console.log('❌ All methods tried, no square footage found');
+        return null;
     }
 };
 
