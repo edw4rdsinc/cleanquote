@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 // This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// --- RentCast API Service (FIXED VERSION) ---
+// --- RentCast API Service (CORRECTED VERSION) ---
 const realEstateAPI = {
     // SECURITY FIX: Use environment variable for API key
     apiKey: process.env.RENTCAST_API_KEY || "671796af0835434297f1c016b70353a1",
@@ -30,73 +30,90 @@ const realEstateAPI = {
         try {
             console.log(`Making RentCast API call for property: ${address.street}`);
             
-            // FIX 1: Use the correct endpoint format
-            // The RentCast API likely uses /properties with query parameters, not /properties/search
+            // CORRECTED: RentCast uses POST with request body, not GET with query params
             const apiUrl = `https://api.rentcast.io/v1/properties`;
 
-            // FIX 2: Build query parameters instead of request body
-            const params = new URLSearchParams({
-                address: `${address.street}, ${address.city}, ${address.state} ${address.zip}`
-            });
+            // Build the full address string
+            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
 
-            // FIX 3: Use correct headers format
+            // CORRECTED: Use proper headers format for RentCast
             const headers = {
-                'X-Api-Key': realEstateAPI.apiKey,  // Note: X-Api-Key (not X-API-KEY)
+                'X-Api-Key': realEstateAPI.apiKey,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             };
-            
-            // FIX 4: Use GET request with query parameters
-            const response = await axios.get(`${apiUrl}?${params.toString()}`, { headers });
-            
-            console.log('API Response:', response.data);
 
-            // FIX 5: Handle different response formats
-            let property = null;
+            // CORRECTED: Use POST with address in the request body
+            const requestBody = {
+                address: fullAddress
+            };
             
-            // Check if response is an array or object
-            if (Array.isArray(response.data)) {
-                property = response.data[0];
-            } else if (response.data && response.data.properties) {
-                property = response.data.properties[0];
-            } else {
-                property = response.data;
-            }
+            console.log('Making POST request to:', apiUrl);
+            console.log('Request body:', requestBody);
+            console.log('Headers:', headers);
+            
+            const response = await axios.post(apiUrl, requestBody, { headers });
+            
+            console.log('API Response status:', response.status);
+            console.log('API Response data:', response.data);
 
-            // FIX 6: Check for different possible field names
-            if (property) {
-                // RentCast might use different field names
-                const squareFootage = property.squareFootage || 
-                                    property.square_footage || 
-                                    property.sqft || 
-                                    property.livingArea ||
-                                    property.living_area;
-
-                if (squareFootage) {
-                    return { squareFootage: squareFootage };
+            // Handle the response - RentCast returns an array of properties
+            let properties = response.data;
+            
+            if (!Array.isArray(properties)) {
+                console.log('Response is not an array, checking for properties field');
+                if (properties && properties.properties && Array.isArray(properties.properties)) {
+                    properties = properties.properties;
                 } else {
-                    console.log('Property found but no square footage data:', Object.keys(property));
+                    console.log('Unexpected response format:', typeof properties);
                     return null;
                 }
+            }
+
+            if (properties.length === 0) {
+                console.log('No properties found in response');
+                return null;
+            }
+
+            // Take the first property from the results
+            const property = properties[0];
+            console.log('Property found:', Object.keys(property));
+
+            // RentCast uses 'squareFootage' field (based on their documentation)
+            if (property.squareFootage) {
+                console.log('Square footage found:', property.squareFootage);
+                return { squareFootage: property.squareFootage };
             } else {
-                console.log('No property data in response');
+                console.log('Property found but no square footage data. Available fields:', Object.keys(property));
+                // Log a few key fields to help debug
+                console.log('Sample property data:', {
+                    formattedAddress: property.formattedAddress,
+                    propertyType: property.propertyType,
+                    bedrooms: property.bedrooms,
+                    bathrooms: property.bathrooms,
+                    yearBuilt: property.yearBuilt
+                });
                 return null;
             }
 
         } catch (error) {
-            // FIX 7: Better error handling and logging
+            // Enhanced error handling and logging
             console.error('RentCast API lookup error:');
             console.error('Status:', error.response?.status);
             console.error('Status Text:', error.response?.statusText);
             console.error('Response Data:', error.response?.data);
             console.error('Request URL:', error.config?.url);
+            console.error('Request Method:', error.config?.method);
+            console.error('Request Headers:', error.config?.headers);
+            console.error('Request Body:', error.config?.data);
             console.error('Full Error:', error.message);
             
             // Return error info for debugging
             return {
                 error: true,
                 status: error.response?.status,
-                message: error.response?.data?.message || error.message
+                message: error.response?.data?.message || error.message,
+                details: error.response?.data
             };
         }
     }
