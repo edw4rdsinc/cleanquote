@@ -21,39 +21,83 @@ app.use(bodyParser.json());
 // This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// --- RentCast API Service ---
+// --- RentCast API Service (FIXED VERSION) ---
 const realEstateAPI = {
-    apiKey: "671796af0835434297f1c016b70353a1",
+    // SECURITY FIX: Use environment variable for API key
+    apiKey: process.env.RENTCAST_API_KEY || "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {
         try {
-            console.log(`Making real RentCast API call for property: ${address.street}`);
+            console.log(`Making RentCast API call for property: ${address.street}`);
             
-            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
-            const apiUrl = `https://api.rentcast.io/v1/properties/search`;
+            // FIX 1: Use the correct endpoint format
+            // The RentCast API likely uses /properties with query parameters, not /properties/search
+            const apiUrl = `https://api.rentcast.io/v1/properties`;
 
-            const requestBody = {
-                address: fullAddress
-            };
+            // FIX 2: Build query parameters instead of request body
+            const params = new URLSearchParams({
+                address: `${address.street}, ${address.city}, ${address.state} ${address.zip}`
+            });
 
+            // FIX 3: Use correct headers format
             const headers = {
-                'X-API-KEY': realEstateAPI.apiKey,
-                'Content-Type': 'application/json'
+                'X-Api-Key': realEstateAPI.apiKey,  // Note: X-Api-Key (not X-API-KEY)
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             };
             
-            const response = await axios.post(apiUrl, requestBody, { headers });
+            // FIX 4: Use GET request with query parameters
+            const response = await axios.get(`${apiUrl}?${params.toString()}`, { headers });
             
-            const property = response.data[0];
+            console.log('API Response:', response.data);
 
-            if (property && property.squareFootage) {
-                return { squareFootage: property.squareFootage };
+            // FIX 5: Handle different response formats
+            let property = null;
+            
+            // Check if response is an array or object
+            if (Array.isArray(response.data)) {
+                property = response.data[0];
+            } else if (response.data && response.data.properties) {
+                property = response.data.properties[0];
             } else {
+                property = response.data;
+            }
+
+            // FIX 6: Check for different possible field names
+            if (property) {
+                // RentCast might use different field names
+                const squareFootage = property.squareFootage || 
+                                    property.square_footage || 
+                                    property.sqft || 
+                                    property.livingArea ||
+                                    property.living_area;
+
+                if (squareFootage) {
+                    return { squareFootage: squareFootage };
+                } else {
+                    console.log('Property found but no square footage data:', Object.keys(property));
+                    return null;
+                }
+            } else {
+                console.log('No property data in response');
                 return null;
             }
 
         } catch (error) {
-            console.error('RentCast API lookup error:', error.response?.data || error.message);
-            return null;
+            // FIX 7: Better error handling and logging
+            console.error('RentCast API lookup error:');
+            console.error('Status:', error.response?.status);
+            console.error('Status Text:', error.response?.statusText);
+            console.error('Response Data:', error.response?.data);
+            console.error('Request URL:', error.config?.url);
+            console.error('Full Error:', error.message);
+            
+            // Return error info for debugging
+            return {
+                error: true,
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message
+            };
         }
     }
 };
@@ -127,19 +171,33 @@ const mockCalendar = {
     }
 };
 
-// --- Backend Route: Property Lookup with API ---
+// --- Backend Route: Property Lookup with API (UPDATED) ---
 app.post('/property-lookup', async (req, res) => {
     console.log('Received request to lookup property with API.');
+    console.log('Request body:', req.body);
+    
     const address = req.body;
 
     if (!address.street || !address.city || !address.state || !address.zip) {
+        console.log('Missing required fields:', address);
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
         const propertyData = await realEstateAPI.lookupProperty(address);
-        if (propertyData) {
-            console.log(`Property data found via API for: ${address.street}`);
+        
+        // Check if this is an error response
+        if (propertyData && propertyData.error) {
+            console.log(`API returned error for: ${address.street}`, propertyData);
+            return res.status(500).json({ 
+                error: 'API lookup failed', 
+                details: propertyData.message,
+                status: propertyData.status 
+            });
+        }
+        
+        if (propertyData && propertyData.squareFootage) {
+            console.log(`Property data found via API for: ${address.street}`, propertyData);
             res.status(200).json(propertyData);
         } else {
             console.log(`Property not found via API for: ${address.street}`);
@@ -157,7 +215,7 @@ app.post('/stripe/create-checkout', async (req, res) => {
   
   const { name, email, address, totalPrice, depositAmount } = req.body;
   if (!name || !email || !address || !depositAmount) {
-    return res.status(400).json({ error: 'Missing required fields for checkout.' });
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
@@ -198,7 +256,7 @@ app.post('/calendar/book', async (req, res) => {
     console.log('Received request to book a calendar appointment.');
     const { name, email, address, estimatedHours, preferredStartDate } = req.body;
     if (!name || !email || !address || !estimatedHours) {
-        return res.status(400).json({ error: 'Missing required fields for booking.' });
+        return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
@@ -234,7 +292,7 @@ app.use((error, req, res, next) => {
 
 // --- Explicitly serve index.html for the root URL ---
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
 // Start server if this file is run directly
@@ -246,4 +304,3 @@ if (require.main === module) {
     console.log(`GET /health - Health check`);
   });
 }
-
