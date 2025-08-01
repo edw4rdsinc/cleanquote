@@ -85,16 +85,23 @@
 
         <!-- Message Box for Success/Error -->
         <div id="message-box" class="message-box p-4 mt-4 rounded-lg text-center"></div>
+        
+        <!-- Next Step Button (initially hidden) -->
+        <div id="next-step-container" class="hidden mt-4">
+            <a href="serviceform.html" id="next-step-button" class="block w-full text-center bg-green-500 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-green-600 transition-colors">
+                Continue to Next Step
+            </a>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Global object to store data across steps
             window.cleanQuote = window.cleanQuote || {};
             
             const form = document.getElementById('address-form');
             const messageBox = document.getElementById('message-box');
             const submitButton = document.getElementById('submit-button');
+            const nextStepContainer = document.getElementById('next-step-container');
 
             const validZips = new Set([
                 "97005", "97006", "97007", "97008", "97075", "97076", "97077", "97223", "97225", "97229",
@@ -106,8 +113,12 @@
                 messageBox.style.display = 'block';
                 if (type === 'success') {
                     messageBox.className = 'p-4 mt-4 rounded-lg bg-green-100 text-green-700 text-center';
+                    // Show the 'Next' button on success
+                    nextStepContainer.classList.remove('hidden');
                 } else {
                     messageBox.className = 'p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center';
+                    // Hide the 'Next' button on error
+                    nextStepContainer.classList.add('hidden');
                 }
             };
 
@@ -117,6 +128,7 @@
                 submitButton.textContent = 'Checking...';
                 submitButton.disabled = true;
                 messageBox.style.display = 'none';
+                nextStepContainer.classList.add('hidden');
 
                 const formData = new FormData(form);
                 const address = {
@@ -133,7 +145,6 @@
                     return;
                 }
 
-                // --- The backend URL has been updated to be relative ---
                 const backendUrl = '/property-lookup';
 
                 try {
@@ -169,4 +180,3 @@
     </script>
 </body>
 </html>
-
