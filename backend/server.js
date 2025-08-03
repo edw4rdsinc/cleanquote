@@ -23,9 +23,6 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 // --- RentCast API Service ---
 const realEstateAPI = {
-    // IMPORTANT: Replace "YOUR_RENTCAST_API_KEY" with your actual API key.
-    // In a real application, you would load this from an environment variable
-    // for security, like: process.env.RENTCAST_API_KEY;
     apiKey: "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {

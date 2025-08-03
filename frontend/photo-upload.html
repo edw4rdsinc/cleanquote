@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,11 +28,13 @@
 <body class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-2xl">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 3: Upload Room Photos</h1>
-        <form id="photos-form" class="space-y-6">
+        
+        <p class="text-gray-600 text-center">
+            Please upload one photo for each of the following rooms. All photos must be taken today.
+        </p>
+        <p id="validation-message" class="text-sm text-red-500 text-center mt-2 hidden">Please upload all four photos to continue.</p>
 
-            <p class="text-gray-600 text-center">
-                Please upload one photo for each of the following rooms. All photos must be taken today.
-            </p>
+        <form id="photos-form" class="space-y-6">
 
             <!-- Photo Upload Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -113,7 +114,7 @@
 
             <!-- Next Button -->
             <button
-                type="submit"
+                type="button"
                 id="next-button"
                 disabled
                 class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400"
@@ -122,7 +123,7 @@
             </button>
         </form>
 
-        <!-- Message Box -->
+        <!-- Message Box for Success/Error -->
         <div id="message-box" class="message-box p-4 mt-4 rounded-lg text-center"></div>
     </div>
 
@@ -151,7 +152,7 @@
             // Function to check if all photos have been successfully validated
             const checkAllPhotosValid = () => {
                 const requiredRooms = ['kitchen', 'living-room', 'bathroom', 'bedroom'];
-                const allValid = requiredRooms.every(room => window.cleanQuote.photos[room] !== undefined);
+                const allValid = requiredRooms.every(room => window.cleanQuote.photos[room] instanceof File);
                 nextButton.disabled = !allValid;
             };
 
@@ -161,20 +162,17 @@
                     EXIF.getData(file, function() {
                         const dateTimeOriginal = EXIF.getTag(this, 'DateTimeOriginal');
                         
-                        // Get today's date in YYYY:MM:DD format
                         const today = new Date();
                         const todayDateString = `${today.getFullYear()}:${(today.getMonth() + 1).toString().padStart(2, '0')}:${today.getDate().toString().padStart(2, '0')}`;
 
                         if (dateTimeOriginal) {
-                            // Extract the date part (YYYY:MM:DD) from the full DateTimeOriginal string
                             const photoDate = dateTimeOriginal.split(' ')[0];
                             if (photoDate === todayDateString) {
-                                resolve(true); // Photo is from today
+                                resolve(true);
                             } else {
                                 reject(`Your ${roomName} photo must be taken today.`);
                             }
                         } else {
-                            // No EXIF data, assume it's an old or edited photo
                             reject(`We couldn't verify the date of your ${roomName} photo. It must be a recent photo taken today.`);
                         }
                     });
@@ -234,14 +232,13 @@
                 });
             });
 
-            // Event listener for form submission
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                // At this point, all photos are already validated and stored.
-                // Log the data and prepare for the next step.
-                console.log('Photos uploaded and validated:', window.cleanQuote.photos);
-                showMessage("All photos are validated. Ready for Step 4: AI Cleanliness Rating.");
+            // Event listener for next button
+            nextButton.addEventListener('click', () => {
+                if (Object.keys(window.cleanQuote.photos).length === 4) {
+                    window.location.href = 'estimate-payment.html';
+                } else {
+                    document.getElementById('validation-message').classList.remove('hidden');
+                }
             });
         });
     </script>
