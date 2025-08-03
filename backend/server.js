@@ -21,181 +21,43 @@ app.use(bodyParser.json());
 // This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// --- Debug RentCast API - Let's try multiple approaches ---
+// --- RentCast API Service ---
 const realEstateAPI = {
-    apiKey: process.env.RENTCAST_API_KEY || "671796af0835434297f1c016b70353a1",
-
-    // Method 1: Try the city/state approach from their example
-    testMethod1: async (address) => {
-        try {
-            console.log('\n=== METHOD 1: City/State query ===');
-            const apiUrl = `https://api.rentcast.io/v1/properties`;
-            
-            const params = new URLSearchParams({
-                city: address.city,
-                state: address.state,
-                limit: 10
-            });
-
-            const headers = {
-                'X-Api-Key': realEstateAPI.apiKey,
-                'Accept': 'application/json'
-            };
-            
-            const requestUrl = `${apiUrl}?${params.toString()}`;
-            console.log('Request URL:', requestUrl);
-            
-            const response = await axios.get(requestUrl, { headers });
-            console.log('SUCCESS - Status:', response.status);
-            console.log('Response length:', response.data?.length || 'not array');
-            
-            return response.data;
-        } catch (error) {
-            console.log('METHOD 1 FAILED:', error.response?.status, error.response?.data);
-            return null;
-        }
-    },
-
-    // Method 2: Try with full address parameter
-    testMethod2: async (address) => {
-        try {
-            console.log('\n=== METHOD 2: Full address query ===');
-            const apiUrl = `https://api.rentcast.io/v1/properties`;
-            
-            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
-            const params = new URLSearchParams({
-                address: fullAddress
-            });
-
-            const headers = {
-                'X-Api-Key': realEstateAPI.apiKey,
-                'Accept': 'application/json'
-            };
-            
-            const requestUrl = `${apiUrl}?${params.toString()}`;
-            console.log('Request URL:', requestUrl);
-            
-            const response = await axios.get(requestUrl, { headers });
-            console.log('SUCCESS - Status:', response.status);
-            console.log('Response length:', response.data?.length || 'not array');
-            
-            return response.data;
-        } catch (error) {
-            console.log('METHOD 2 FAILED:', error.response?.status, error.response?.data);
-            return null;
-        }
-    },
-
-    // Method 3: Try individual address components
-    testMethod3: async (address) => {
-        try {
-            console.log('\n=== METHOD 3: Individual components ===');
-            const apiUrl = `https://api.rentcast.io/v1/properties`;
-            
-            const params = new URLSearchParams({
-                street: address.street,
-                city: address.city,
-                state: address.state,
-                zipCode: address.zip,
-                limit: 5
-            });
-
-            const headers = {
-                'X-Api-Key': realEstateAPI.apiKey,
-                'Accept': 'application/json'
-            };
-            
-            const requestUrl = `${apiUrl}?${params.toString()}`;
-            console.log('Request URL:', requestUrl);
-            
-            const response = await axios.get(requestUrl, { headers });
-            console.log('SUCCESS - Status:', response.status);
-            console.log('Response length:', response.data?.length || 'not array');
-            
-            return response.data;
-        } catch (error) {
-            console.log('METHOD 3 FAILED:', error.response?.status, error.response?.data);
-            return null;
-        }
-    },
-
-    // Method 4: Test the API key with their documented example
-    testApiKey: async () => {
-        try {
-            console.log('\n=== METHOD 4: API Key test with Austin, TX ===');
-            const apiUrl = `https://api.rentcast.io/v1/properties`;
-            
-            const params = new URLSearchParams({
-                city: 'Austin',
-                state: 'TX',
-                limit: 1
-            });
-
-            const headers = {
-                'X-Api-Key': realEstateAPI.apiKey,
-                'Accept': 'application/json'
-            };
-            
-            const requestUrl = `${apiUrl}?${params.toString()}`;
-            console.log('Request URL:', requestUrl);
-            
-            const response = await axios.get(requestUrl, { headers });
-            console.log('API KEY WORKS! - Status:', response.status);
-            console.log('Response length:', response.data?.length || 'not array');
-            
-            return response.data;
-        } catch (error) {
-            console.log('API KEY TEST FAILED:', error.response?.status, error.response?.data);
-            return null;
-        }
-    },
+    // IMPORTANT: Replace "YOUR_RENTCAST_API_KEY" with your actual API key.
+    // In a real application, you would load this from an environment variable
+    // for security, like: process.env.RENTCAST_API_KEY;
+    apiKey: "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {
-        console.log('\n=================== DEBUGGING RENTCAST API ===================');
-        
-        // First test if the API key works at all
-        const keyTest = await realEstateAPI.testApiKey();
-        if (!keyTest) {
-            console.log('❌ API key test failed - there may be an issue with your API key or subscription');
-            return { error: true, message: 'API key validation failed' };
-        }
-        
-        console.log('✅ API key works! Trying different search methods...');
-        
-        // Try method 1: City/State (most likely to work)
-        const result1 = await realEstateAPI.testMethod1(address);
-        if (result1 && result1.length > 0) {
-            console.log('✅ METHOD 1 SUCCESS - Found properties with city/state search');
-            // Look for the specific address in results
-            const targetProperty = result1.find(prop => 
-                prop.formattedAddress && 
-                prop.formattedAddress.toLowerCase().includes(address.street.toLowerCase())
-            );
-            if (targetProperty && targetProperty.squareFootage) {
-                return { squareFootage: targetProperty.squareFootage };
+        try {
+            console.log(`Making real RentCast API call for property: ${address.street}`);
+            
+            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
+            const apiUrl = `https://api.rentcast.io/v1/properties/search`;
+
+            const requestBody = {
+                address: fullAddress
+            };
+
+            const headers = {
+                'X-API-KEY': realEstateAPI.apiKey,
+                'Content-Type': 'application/json'
+            };
+            
+            const response = await axios.post(apiUrl, requestBody, { headers });
+            
+            const property = response.data[0];
+
+            if (property && property.squareFootage) {
+                return { squareFootage: property.squareFootage };
+            } else {
+                return null;
             }
+
+        } catch (error) {
+            console.error('RentCast API lookup error:', error.response?.data || error.message);
+            return null;
         }
-        
-        // Try method 2: Full address
-        const result2 = await realEstateAPI.testMethod2(address);
-        if (result2 && result2.length > 0) {
-            console.log('✅ METHOD 2 SUCCESS - Found properties with full address search');
-            if (result2[0].squareFootage) {
-                return { squareFootage: result2[0].squareFootage };
-            }
-        }
-        
-        // Try method 3: Individual components
-        const result3 = await realEstateAPI.testMethod3(address);
-        if (result3 && result3.length > 0) {
-            console.log('✅ METHOD 3 SUCCESS - Found properties with component search');
-            if (result3[0].squareFootage) {
-                return { squareFootage: result3[0].squareFootage };
-            }
-        }
-        
-        console.log('❌ All methods tried, no square footage found');
-        return null;
     }
 };
 
@@ -268,33 +130,19 @@ const mockCalendar = {
     }
 };
 
-// --- Backend Route: Property Lookup with API (UPDATED) ---
+// --- Backend Route: Property Lookup with API ---
 app.post('/property-lookup', async (req, res) => {
     console.log('Received request to lookup property with API.');
-    console.log('Request body:', req.body);
-    
     const address = req.body;
 
     if (!address.street || !address.city || !address.state || !address.zip) {
-        console.log('Missing required fields:', address);
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
         const propertyData = await realEstateAPI.lookupProperty(address);
-        
-        // Check if this is an error response
-        if (propertyData && propertyData.error) {
-            console.log(`API returned error for: ${address.street}`, propertyData);
-            return res.status(500).json({ 
-                error: 'API lookup failed', 
-                details: propertyData.message,
-                status: propertyData.status 
-            });
-        }
-        
-        if (propertyData && propertyData.squareFootage) {
-            console.log(`Property data found via API for: ${address.street}`, propertyData);
+        if (propertyData) {
+            console.log(`Property data found via API for: ${address.street}`);
             res.status(200).json(propertyData);
         } else {
             console.log(`Property not found via API for: ${address.street}`);
@@ -304,6 +152,12 @@ app.post('/property-lookup', async (req, res) => {
         console.error('API lookup error:', error.message);
         res.status(500).json({ error: 'Failed to perform API property lookup' });
     }
+});
+
+// --- Backend Route: AI Cleanliness Analysis ---
+app.post('/ai/cleanliness', async (req, res) => {
+    console.log('AI analysis is now handled on the client-side.');
+    res.status(200).json({ message: 'AI analysis is client-side' });
 });
 
 // --- Backend Route: Create Stripe Checkout Session ---
