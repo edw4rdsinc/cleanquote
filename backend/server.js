@@ -10,38 +10,32 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-// Change the port to something that is less likely to be in use.
 const port = process.env.PORT || 3001;
 
 // --- Middleware ---
 app.use(cors());
 app.use(bodyParser.json());
-
-// --- Serve Frontend Files ---
-// This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // --- RentCast API Service ---
 const realEstateAPI = {
-    apiKey: "671796af0835434297f1c016b70353a1", // Note: This key is public.
+    apiKey: "671796af0835434297f1c016b70353a1",
 
     lookupProperty: async (address) => {
         try {
-            console.log(`Making real RentCast API call for property: ${address.street}`);
-            
             const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
-            const apiUrl = `https://api.rentcast.io/v1/properties/search`;
-
-            const requestBody = {
-                address: fullAddress
-            };
+            console.log(`Making RentCast API call for property: ${fullAddress}`);
+            
+            // ***FIXED***: Changed from a POST to a GET request.
+            // The address is now passed as a URL query parameter.
+            const apiUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(fullAddress)}`;
 
             const headers = {
                 'X-API-KEY': realEstateAPI.apiKey,
-                'Content-Type': 'application/json'
             };
             
-            const response = await axios.post(apiUrl, requestBody, { headers });
+            // ***FIXED***: Using axios.get instead of axios.post
+            const response = await axios.get(apiUrl, { headers });
             
             const property = response.data[0];
 
@@ -52,6 +46,7 @@ const realEstateAPI = {
             }
 
         } catch (error) {
+            // Log the detailed error from the API for better debugging.
             console.error('RentCast API lookup error:', error.response?.data || error.message);
             return null;
         }
@@ -69,7 +64,6 @@ const mockStripe = {
         }
         const mockSessionId = 'cs_test_mock_12345';
         return {
-          // ***FIXED***: The URL now correctly points to the local confirmation page.
           url: sessionParams.success_url.replace('{CHECKOUT_SESSION_ID}', mockSessionId)
         };
       }
@@ -178,9 +172,7 @@ app.post('/stripe/create-checkout', async (req, res) => {
         },
       ],
       mode: 'payment',
-      // ***FIXED***: Changed to a relative URL for the success page.
       success_url: `http://localhost:${port}/step6.html?session_id={CHECKOUT_SESSION_ID}`,
-      // ***FIXED***: Changed to a relative URL for the cancel page.
       cancel_url: `http://localhost:${port}/estimate-payment.html`,
       customer_email: email,
       metadata: {
