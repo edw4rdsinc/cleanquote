@@ -6,24 +6,41 @@
     <title>EA4-CleanQuote - Step 2</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f7fafc;
         }
-        /* Custom styles for the slider thumb and track */
+        /* ***FIXED***: Replaced @apply with standard CSS for CDN compatibility. */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            background-color: transparent;
+        }
         input[type="range"]::-webkit-slider-runnable-track {
-            @apply bg-gray-300 rounded-full h-2;
+            height: 0.5rem;
+            background-color: #d1d5db; /* gray-300 */
+            border-radius: 9999px;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            @apply bg-blue-600 w-5 h-5 rounded-full -mt-1.5 shadow-md;
+            margin-top: -0.25rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: #2563eb; /* blue-600 */
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            cursor: pointer;
+        }
+        input[type="range"]:focus {
+            outline: none;
         }
         input[type="range"]:focus::-webkit-slider-thumb {
-            @apply ring-2 ring-blue-500 ring-offset-2;
-        }
-        .message-box {
-            display: none; /* Initially hidden */
+            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.5);
         }
     </style>
 </head>
@@ -37,28 +54,30 @@
                 <p class="font-semibold text-lg text-gray-800">Cleaning Type</p>
                 <!-- Standard Clean -->
                 <div class="flex items-center">
-                    <input type="radio" id="standard-clean" name="base-service" value="Standard Clean" data-price="120" class="form-radio h-5 w-5 text-blue-600 transition duration-150 ease-in-out" checked>
-                    <label for="standard-clean" class="ml-3 text-gray-700">Standard Clean ($120 base)</label>
+                    <!-- ***FIXED***: Removed form-radio and applied direct styling -->
+                    <input type="radio" id="standard-clean" name="base-service" value="Standard Clean" data-price="120" class="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500" checked>
+                    <label for="standard-clean" class="ml-3 text-gray-700">Standard Clean ($120)</label>
                 </div>
                 <!-- Deep Clean -->
                 <div class="flex items-center">
-                    <input type="radio" id="deep-clean" name="base-service" value="Deep Clean" data-price="60" class="form-radio h-5 w-5 text-blue-600 transition duration-150 ease-in-out">
-                    <label for="deep-clean" class="ml-3 text-gray-700">Deep Clean (+$60)</label>
+                    <input type="radio" id="deep-clean" name="base-service" value="Deep Clean" data-price="180" class="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500">
+                    <label for="deep-clean" class="ml-3 text-gray-700">Deep Clean ($180)</label>
                 </div>
 
                 <p class="font-semibold text-lg text-gray-800 pt-4">Add-On Services</p>
                 <!-- Add-on checkboxes -->
                 <div class="space-y-2">
                     <div class="flex items-center">
-                        <input type="checkbox" id="inside-fridge" name="add-on" value="Inside Fridge" data-price="20" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <!-- ***FIXED***: Removed form-checkbox and applied direct styling -->
+                        <input type="checkbox" id="inside-fridge" name="add-on" value="Inside Fridge" data-price="20" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <label for="inside-fridge" class="ml-3 text-gray-700">Inside Fridge (+$20)</label>
                     </div>
                     <div class="flex items-center">
-                        <input type="checkbox" id="inside-oven" name="add-on" value="Inside Oven" data-price="20" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <input type="checkbox" id="inside-oven" name="add-on" value="Inside Oven" data-price="20" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <label for="inside-oven" class="ml-3 text-gray-700">Inside Oven (+$20)</label>
                     </div>
                     <div class="flex items-center">
-                        <input type="checkbox" id="windows" name="add-on" value="Windows" data-price="40" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <input type="checkbox" id="windows" name="add-on" value="Windows" data-price="40" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <label for="windows" class="ml-3 text-gray-700">Windows (+$40)</label>
                     </div>
                 </div>
@@ -66,19 +85,20 @@
 
             <!-- Hard Flooring Percentage Input -->
             <div class="space-y-2 pt-4">
-                <label for="hard-floors" class="block text-lg font-semibold text-gray-800">
+                <label for="hard-floors-range" class="block text-lg font-semibold text-gray-800">
                     What % of your home has hard flooring?
                 </label>
                 <div class="flex items-center space-x-4">
                     <input type="range" id="hard-floors-range" name="hard-floors-range" min="0" max="100" value="50" class="w-full">
                     <span id="hard-floors-value" class="w-12 text-center text-lg font-medium text-gray-700">50%</span>
                 </div>
+                <p class="text-xs text-gray-500">Note: A small surcharge of $0.50 is added for each percentage point above 50%.</p>
             </div>
 
             <!-- Dynamic Price Display -->
             <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
                 <span class="text-xl font-bold text-gray-800">Estimated Total:</span>
-                <span id="total-price" class="text-2xl font-extrabold text-blue-600">$120.00</span>
+                <span id="total-price" class="text-2xl font-extrabold text-blue-600">$0.00</span>
             </div>
 
             <!-- Next Button -->
@@ -91,87 +111,68 @@
             </button>
         </form>
 
-        <!-- Message Box for Success/Error -->
-        <div id="message-box" class="message-box p-4 mt-4 rounded-lg text-center"></div>
+        <!-- ***FIXED***: Removed unused message box -->
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Global object to store data across steps
             window.cleanQuote = window.cleanQuote || {};
             
-            // Element references
             const form = document.getElementById('services-form');
             const baseServiceInputs = document.querySelectorAll('input[name="base-service"]');
             const addonInputs = document.querySelectorAll('input[name="add-on"]');
             const hardFloorsRange = document.getElementById('hard-floors-range');
             const hardFloorsValue = document.getElementById('hard-floors-value');
             const totalPriceElement = document.getElementById('total-price');
-            const messageBox = document.getElementById('message-box');
 
-            // Function to calculate and update the price
             const updatePrice = () => {
                 let totalPrice = 0;
                 let deepCleanSelected = false;
                 let addonCount = 0;
 
-                // Calculate base service price
                 const selectedBase = document.querySelector('input[name="base-service"]:checked');
                 if (selectedBase) {
                     totalPrice += parseFloat(selectedBase.dataset.price);
                     if (selectedBase.value === 'Deep Clean') {
                         deepCleanSelected = true;
-                        // Add the standard clean base price as deep clean is an add-on to the base
-                        totalPrice += 120;
                     }
                 }
                 
-                // Calculate add-on prices and count
                 addonInputs.forEach(input => {
                     if (input.checked) {
                         totalPrice += parseFloat(input.dataset.price);
                         addonCount++;
                     }
                 });
+                
+                const hardFloorsPercent = parseInt(hardFloorsRange.value, 10);
+                if (hardFloorsPercent > 50) {
+                    const surcharge = (hardFloorsPercent - 50) * 0.50;
+                    totalPrice += surcharge;
+                }
 
-                // Apply package discount logic
                 if (deepCleanSelected && addonCount >= 2) {
                     const discount = totalPrice * 0.10;
                     totalPrice -= discount;
                 }
 
-                // Update the total price display
                 totalPriceElement.textContent = `$${totalPrice.toFixed(2)}`;
             };
 
-            // Initial price calculation
             updatePrice();
 
-            // Event listeners for service selections
             baseServiceInputs.forEach(input => input.addEventListener('change', updatePrice));
             addonInputs.forEach(input => input.addEventListener('change', updatePrice));
-
-            // Event listener for the range slider
             hardFloorsRange.addEventListener('input', (e) => {
                 hardFloorsValue.textContent = `${e.target.value}%`;
+                updatePrice();
             });
 
-            // Function to show a message in the message box
-            const showMessage = (text, type = 'success') => {
-                messageBox.textContent = text;
-                messageBox.style.display = 'block';
-                if (type === 'success') {
-                    messageBox.className = 'p-4 mt-4 rounded-lg bg-green-100 text-green-700 text-center';
-                } else {
-                    messageBox.className = 'p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center';
-                }
-            };
+            // ***FIXED***: Removed unused showMessage function.
 
-            // Event listener for form submission
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
 
-                // Get selected services
                 const selectedServices = [];
                 const baseService = document.querySelector('input[name="base-service"]:checked');
                 if (baseService) {
@@ -183,16 +184,14 @@
                     }
                 });
                 
-                // Save data to the global object
                 window.cleanQuote.services = selectedServices;
                 window.cleanQuote.floorType = parseInt(hardFloorsRange.value, 10);
+                window.cleanQuote.estimatedPrice = parseFloat(totalPriceElement.textContent.replace('$', ''));
                 
-                // Log and show the message for the next step
                 console.log('Services selected:', window.cleanQuote.services);
                 console.log('Hard floor percentage:', window.cleanQuote.floorType);
-                showMessage("Services and flooring information saved. Ready for Step 3: Photo Upload.");
-
-                // Redirect to the photo upload page
+                console.log('Estimated Price:', window.cleanQuote.estimatedPrice);
+                
                 window.location.href = 'photo-upload.html';
             });
         });

@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- EXIF.js library for reading photo metadata -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -46,9 +49,9 @@
                         <label for="kitchen-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                             <img id="preview-kitchen" src="" alt="Kitchen preview" class="photo-preview hidden">
                             <span id="label-kitchen" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-kitchen" class="absolute inset-0 flex items-center justify-center hidden">
+                            <div id="status-kitchen" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
                                 <!-- Checkmark SVG for success -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                 </svg>
                             </div>
@@ -65,8 +68,8 @@
                         <label for="living-room-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                             <img id="preview-living-room" src="" alt="Living room preview" class="photo-preview hidden">
                             <span id="label-living-room" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-living-room" class="absolute inset-0 flex items-center justify-center hidden">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <div id="status-living-room" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                 </svg>
                             </div>
@@ -83,8 +86,8 @@
                         <label for="bathroom-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                             <img id="preview-bathroom" src="" alt="Bathroom preview" class="photo-preview hidden">
                             <span id="label-bathroom" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-bathroom" class="absolute inset-0 flex items-center justify-center hidden">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <div id="status-bathroom" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                 </svg>
                             </div>
@@ -101,8 +104,8 @@
                         <label for="bedroom-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
                             <img id="preview-bedroom" src="" alt="Bedroom preview" class="photo-preview hidden">
                             <span id="label-bedroom" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-bedroom" class="absolute inset-0 flex items-center justify-center hidden">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                            <div id="status-bedroom" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
                                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                 </svg>
                             </div>
@@ -117,7 +120,7 @@
                 type="button"
                 id="next-button"
                 disabled
-                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400"
+                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
                 Next
             </button>
@@ -136,44 +139,45 @@
             const form = document.getElementById('photos-form');
             const fileInputs = document.querySelectorAll('input[type="file"]');
             const nextButton = document.getElementById('next-button');
-            const messageBox = document.getElementById('message-box');
+            const validationMessage = document.getElementById('validation-message');
             
-            // Function to show a message in the message box
-            const showMessage = (text, type = 'success') => {
-                messageBox.textContent = text;
-                messageBox.style.display = 'block';
-                if (type === 'success') {
-                    messageBox.className = 'p-4 mt-4 rounded-lg bg-green-100 text-green-700 text-center';
-                } else {
-                    messageBox.className = 'p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center';
-                }
-            };
-
             // Function to check if all photos have been successfully validated
             const checkAllPhotosValid = () => {
                 const requiredRooms = ['kitchen', 'living-room', 'bathroom', 'bedroom'];
                 const allValid = requiredRooms.every(room => window.cleanQuote.photos[room] instanceof File);
                 nextButton.disabled = !allValid;
+                validationMessage.classList.toggle('hidden', allValid);
             };
 
-            // Function to validate the EXIF date
+            // ***FIXED***: Updated function to use file.lastModified as a fallback for date validation.
             const validatePhotoDate = (file, roomName) => {
                 return new Promise((resolve, reject) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Set to the beginning of today
+
+                    // Check EXIF data first
                     EXIF.getData(file, function() {
                         const dateTimeOriginal = EXIF.getTag(this, 'DateTimeOriginal');
-                        
-                        const today = new Date();
-                        const todayDateString = `${today.getFullYear()}:${(today.getMonth() + 1).toString().padStart(2, '0')}:${today.getDate().toString().padStart(2, '0')}`;
-
                         if (dateTimeOriginal) {
-                            const photoDate = dateTimeOriginal.split(' ')[0];
-                            if (photoDate === todayDateString) {
-                                resolve(true);
+                            const [datePart] = dateTimeOriginal.split(' ');
+                            const [year, month, day] = datePart.split(':');
+                            const photoDate = new Date(year, month - 1, day);
+                            if (photoDate.getTime() === today.getTime()) {
+                                resolve(true); // EXIF date is today
                             } else {
-                                reject(`Your ${roomName} photo must be taken today.`);
+                                reject(`The ${roomName} photo must be taken today (EXIF date is wrong).`);
                             }
+                            return;
+                        }
+
+                        // Fallback to file.lastModified
+                        const lastModifiedDate = new Date(file.lastModified);
+                        lastModifiedDate.setHours(0, 0, 0, 0); // Normalize to beginning of the day
+
+                        if (lastModifiedDate.getTime() === today.getTime()) {
+                            resolve(true); // File was last modified today
                         } else {
-                            reject(`We couldn't verify the date of your ${roomName} photo. It must be a recent photo taken today.`);
+                            reject(`The ${roomName} photo must be from today (could not verify EXIF).`);
                         }
                     });
                 });
@@ -189,7 +193,7 @@
                     const statusElement = document.getElementById(`status-${roomName}`);
                     const labelElement = document.getElementById(`label-${roomName}`);
                     const errorElement = document.getElementById(`error-${roomName}`);
-                    const formControlLabel = document.querySelector(`label[for="${e.target.id}"]`).parentNode;
+                    const formControlLabel = document.querySelector(`label[for="${e.target.id}"]`);
 
                     // Reset state
                     previewElement.src = '';
@@ -214,18 +218,20 @@
                     };
                     reader.readAsDataURL(file);
 
-                    // Validate the EXIF data
+                    // Validate the photo date
                     try {
                         await validatePhotoDate(file, roomName);
                         // Validation successful
                         statusElement.classList.remove('hidden');
                         formControlLabel.classList.add('border-green-500');
+                        formControlLabel.classList.remove('border-red-500');
                         window.cleanQuote.photos[roomName] = file;
                     } catch (errorMessage) {
                         // Validation failed
                         errorElement.textContent = errorMessage;
                         errorElement.classList.remove('hidden');
                         formControlLabel.classList.add('border-red-500');
+                        formControlLabel.classList.remove('border-green-500');
                     }
                     
                     checkAllPhotosValid();
@@ -234,12 +240,13 @@
 
             // Event listener for next button
             nextButton.addEventListener('click', () => {
-                if (Object.keys(window.cleanQuote.photos).length === 4) {
+                if (!nextButton.disabled) {
                     window.location.href = 'estimate-payment.html';
-                } else {
-                    document.getElementById('validation-message').classList.remove('hidden');
                 }
             });
+
+            // Initial check in case the user navigates back to this page
+            checkAllPhotosValid();
         });
     </script>
 </body>

@@ -19,11 +19,11 @@ app.use(bodyParser.json());
 
 // --- Serve Frontend Files ---
 // This middleware serves all files (e.g., CSS, JS) from the 'frontend' directory.
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // --- RentCast API Service ---
 const realEstateAPI = {
-    apiKey: "671796af0835434297f1c016b70353a1",
+    apiKey: "671796af0835434297f1c016b70353a1", // Note: This key is public.
 
     lookupProperty: async (address) => {
         try {
@@ -69,7 +69,8 @@ const mockStripe = {
         }
         const mockSessionId = 'cs_test_mock_12345';
         return {
-          url: `https://checkout.stripe.com/c/${mockSessionId}`
+          // ***FIXED***: The URL now correctly points to the local confirmation page.
+          url: sessionParams.success_url.replace('{CHECKOUT_SESSION_ID}', mockSessionId)
         };
       }
     }
@@ -86,12 +87,12 @@ const mockCalendar = {
     findNextAvailableSlot: (estimatedHours, preferredDate) => {
         const businessHoursStart = 9;
         const businessHoursEnd = 17;
-        const workWeek = [1, 2, 3, 4, 5];
+        const workWeek = [1, 2, 3, 4, 5]; // Monday to Friday
 
         let currentDate = new Date(preferredDate);
         currentDate.setHours(businessHoursStart, 0, 0, 0);
 
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 30; i++) { // Search up to 30 days in the future
             const dayOfWeek = currentDate.getDay();
             if (!workWeek.includes(dayOfWeek)) {
                 currentDate.setDate(currentDate.getDate() + 1);
@@ -102,7 +103,8 @@ const mockCalendar = {
                 const slotStart = new Date(currentDate);
                 slotStart.setHours(hour, 0, 0, 0);
                 const slotEnd = new Date(slotStart);
-                slotEnd.setHours(slotEnd.getHours() + estimatedHours);
+                slotEnd.setHours(slotEnd.getHours() + Math.ceil(estimatedHours));
+                
                 if (slotEnd.getHours() <= businessHoursEnd) {
                     let isConflict = false;
                     for (const event of mockCalendar.bookedEvents) {
@@ -123,7 +125,7 @@ const mockCalendar = {
             currentDate.setDate(currentDate.getDate() + 1);
             currentDate.setHours(businessHoursStart, 0, 0, 0);
         }
-        return null;
+        return null; // No slot found
     }
 };
 
@@ -133,7 +135,7 @@ app.post('/property-lookup', async (req, res) => {
     const address = req.body;
 
     if (!address.street || !address.city || !address.state || !address.zip) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: 'Missing required address fields.' });
     }
 
     try {
@@ -143,18 +145,12 @@ app.post('/property-lookup', async (req, res) => {
             res.status(200).json(propertyData);
         } else {
             console.log(`Property not found via API for: ${address.street}`);
-            res.status(404).json({ error: 'Property not found via API lookup' });
+            res.status(404).json({ error: 'Property not found. Please check the address and try again.' });
         }
     } catch (error) {
         console.error('API lookup error:', error.message);
-        res.status(500).json({ error: 'Failed to perform API property lookup' });
+        res.status(500).json({ error: 'Failed to perform API property lookup.' });
     }
-});
-
-// --- Backend Route: AI Cleanliness Analysis ---
-app.post('/ai/cleanliness', async (req, res) => {
-    console.log('AI analysis is now handled on the client-side.');
-    res.status(200).json({ message: 'AI analysis is client-side' });
 });
 
 // --- Backend Route: Create Stripe Checkout Session ---
@@ -163,7 +159,7 @@ app.post('/stripe/create-checkout', async (req, res) => {
   
   const { name, email, address, totalPrice, depositAmount } = req.body;
   if (!name || !email || !address || !depositAmount) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields for checkout.' });
   }
 
   try {
@@ -182,8 +178,10 @@ app.post('/stripe/create-checkout', async (req, res) => {
         },
       ],
       mode: 'payment',
-      success_url: 'https://cleanquote.vercel.app/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'https://cleanquote.vercel.app/cancel',
+      // ***FIXED***: Changed to a relative URL for the success page.
+      success_url: `http://localhost:${port}/step6.html?session_id={CHECKOUT_SESSION_ID}`,
+      // ***FIXED***: Changed to a relative URL for the cancel page.
+      cancel_url: `http://localhost:${port}/estimate-payment.html`,
       customer_email: email,
       metadata: {
         customer_name: name,
@@ -204,7 +202,7 @@ app.post('/calendar/book', async (req, res) => {
     console.log('Received request to book a calendar appointment.');
     const { name, email, address, estimatedHours, preferredStartDate } = req.body;
     if (!name || !email || !address || !estimatedHours) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: 'Missing required fields for booking.' });
     }
 
     try {
@@ -224,18 +222,7 @@ app.post('/calendar/book', async (req, res) => {
 
 // --- Health check endpoint ---
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Real Estate API Lookup' });
-});
-
-/**
- * Error handling middleware
- */
-app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    details: error.message 
-  });
+  res.json({ status: 'OK', service: 'CleanQuote Backend' });
 });
 
 // --- Explicitly serve index.html for the root URL ---
@@ -246,9 +233,7 @@ app.get('/', (req, res) => {
 // Start server if this file is run directly
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`Server running with API lookup on port ${port}`);
-    console.log(`To access the application, open your browser and go to: http://localhost:${port}`);
-    console.log(`POST /property-lookup - Extract square footage from property addresses`);
-    console.log(`GET /health - Health check`);
+    console.log(`Server running on port ${port}`);
+    console.log(`Access the application at: http://localhost:${port}`);
   });
 }

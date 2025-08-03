@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EA4-CleanQuote - Step 5</title>
+    <title>EA4-CleanQuote - Step 4</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -19,7 +22,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border-left-color: #fff; /* White spinner */
+            border-left-color: #2563eb; /* blue-600 */
             animation: spin 1s ease infinite;
         }
         @keyframes spin {
@@ -29,286 +32,253 @@
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 5: Quote Preview</h1>
-        
-        <!-- Quote Summary Section -->
-        <div id="quote-summary-view" class="space-y-6">
-            <h2 class="text-2xl font-bold text-gray-800 text-center">Your Estimate Details</h2>
+    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-xl">
+        <div id="main-content">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 4: Generate Estimate</h1>
+            
+            <p class="text-gray-600 text-center mb-6">
+                Please provide your details below. Then, we'll analyze your photos to generate the final estimate.
+            </p>
 
-            <!-- Summary items -->
-            <div class="bg-gray-50 p-4 rounded-lg space-y-3">
-                <div class="flex justify-between items-center border-b pb-2">
-                    <span class="text-gray-700 font-medium">Property Size:</span>
-                    <span id="sqft-display" class="font-bold text-lg text-gray-900"></span>
-                </div>
-                <div class="flex justify-between items-center border-b pb-2">
-                    <span class="text-gray-700 font-medium">Hard Flooring:</span>
-                    <span id="floor-type-display" class="font-bold text-lg text-gray-900"></span>
+            <!-- ***ADDED***: Form to collect customer name and email. -->
+            <form id="customer-info-form" class="space-y-4 mb-8">
+                <div>
+                    <label for="customer-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input type="text" id="customer-name" name="customer-name" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <span class="text-gray-700 font-medium block mb-1">Services Selected:</span>
-                    <ul id="services-display" class="list-disc list-inside space-y-1 ml-4 text-gray-600">
-                        <!-- Services will be dynamically added here -->
-                    </ul>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="email" name="email" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <div>
-                    <span class="text-gray-700 font-medium block mb-1">Cleanliness Ratings:</span>
-                    <div id="cleanliness-display" class="space-y-1 ml-4 text-gray-600">
-                        <!-- Cleanliness scores will be dynamically added here -->
-                    </div>
-                </div>
-                <div class="flex justify-between items-center border-t border-b py-3 mt-4">
-                    <span class="text-gray-700 font-medium">Estimated Time:</span>
-                    <span id="time-display" class="font-bold text-lg text-gray-900"></span>
-                </div>
+                <button type="submit" id="generate-estimate-button" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-green-700 transition-colors">
+                    Generate My Estimate
+                </button>
+            </form>
+
+            <!-- Loading state -->
+            <div id="loading-view" class="hidden flex-col items-center justify-center space-y-4">
+                <div class="spinner"></div>
+                <p class="text-lg text-gray-600 font-medium">Analyzing your photos...</p>
+                <p class="text-sm text-gray-500">This may take a moment.</p>
             </div>
 
-            <!-- Price Breakdown Section -->
-            <div class="bg-gray-100 p-6 rounded-lg space-y-3">
-                <div class="flex justify-between items-center text-xl">
-                    <span class="font-bold text-gray-800">Total Price:</span>
-                    <span id="total-price-display" class="font-extrabold text-blue-600"></span>
+            <!-- Quote Preview and Results state -->
+            <div id="results-view" class="hidden space-y-6">
+                <h2 class="text-2xl font-bold text-gray-800 text-center">Your Quote Is Ready!</h2>
+                <div id="scores-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Scores will be dynamically inserted here -->
                 </div>
-                <div class="flex justify-between items-center text-lg pt-2 border-t border-gray-300">
-                    <span class="font-semibold text-gray-800">50% Deposit Required:</span>
-                    <span id="deposit-display" class="font-bold text-green-600"></span>
+                
+                <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg text-lg font-bold">
+                    <span>Final Price:</span>
+                    <span id="total-price" class="text-2xl font-extrabold text-blue-600"></span>
                 </div>
-            </div>
+                <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg text-lg font-semibold">
+                    <span>50% Deposit Due Today:</span>
+                    <span id="deposit-amount" class="text-xl font-bold text-green-600"></span>
+                </div>
 
-            <!-- Payment Button -->
-            <button
-                id="payment-button"
-                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-            >
-                Book & Pay Deposit
-            </button>
-        </div>
+                <div id="booking-info" class="p-4 rounded-lg bg-blue-50 text-blue-800 text-center">
+                    <!-- Booking info will be inserted here -->
+                </div>
 
-        <!-- Loading state -->
-        <div id="loading-view" class="hidden flex flex-col items-center justify-center space-y-4">
-            <div class="spinner"></div>
-            <p class="text-lg text-gray-600 font-medium text-center">Redirecting to Stripe...</p>
-        </div>
-        
-        <!-- Error state -->
-        <div id="error-view" class="hidden">
-            <div class="message-box p-4 rounded-lg bg-red-100 text-red-700 text-center">
-                <p id="error-message"></p>
+                <button
+                    id="book-and-pay-button"
+                    class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                >
+                    Book & Pay Deposit
+                </button>
             </div>
         </div>
-
     </div>
+
+    <!-- Teachable Machine Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Global object to store data across steps
             window.cleanQuote = window.cleanQuote || {};
-
-            // Mock data for demonstration purposes if previous steps were skipped
-            const mockData = {
-                squareFootage: 1800,
-                services: ['Standard Clean', 'Deep Clean', 'Inside Fridge'],
-                floorType: 75,
-                cleanlinessScores: {
-                    kitchen: 3,
-                    livingRoom: 2,
-                    bathroom: 4,
-                    bedroom: 1,
-                },
-                // Mock user data for the Stripe checkout call
-                customerInfo: {
-                    name: 'Jane Doe',
-                    email: 'jane.doe@example.com',
-                    address: '123 Mock St, Anytown, CA 90210'
-                }
-            };
             
-            // Use mock data if the global object isn't populated
-            if (!window.cleanQuote.squareFootage) {
-                window.cleanQuote = { ...mockData, ...window.cleanQuote };
-                console.log('Using mock data for demonstration. Please complete previous steps for real data.');
-            }
+            // --- Teachable Machine Model & Global Data ---
+            const URL = "https://teachablemachine.withgoogle.com/models/AN-JyGm2G/";
+            let model;
+
+            const cleanlinessDescriptions = {
+                1: 'Very Clean', 2: 'Clean', 3: 'Average', 4: 'Messy', 5: 'Very Messy'
+            };
+            const getColorClass = (score) => {
+                if (score <= 2) return 'text-green-600';
+                if (score === 3) return 'text-yellow-600';
+                return 'text-red-600';
+            };
 
             // --- UI Element References ---
-            const quoteSummaryView = document.getElementById('quote-summary-view');
+            const mainContent = document.getElementById('main-content');
+            const customerInfoForm = document.getElementById('customer-info-form');
+            const generateEstimateButton = document.getElementById('generate-estimate-button');
             const loadingView = document.getElementById('loading-view');
-            const errorView = document.getElementById('error-view');
-            const paymentButton = document.getElementById('payment-button');
-            const errorMessageElement = document.getElementById('error-message');
+            const resultsView = document.getElementById('results-view');
+            const scoresContainer = document.getElementById('scores-container');
+            const totalPriceElement = document.getElementById('total-price');
+            const depositAmountElement = document.getElementById('deposit-amount');
+            const bookAndPayButton = document.getElementById('book-and-pay-button');
+            const bookingInfoElement = document.getElementById('booking-info');
 
-            const sqftDisplay = document.getElementById('sqft-display');
-            const floorTypeDisplay = document.getElementById('floor-type-display');
-            const servicesDisplay = document.getElementById('services-display');
-            const cleanlinessDisplay = document.getElementById('cleanliness-display');
-            const timeDisplay = document.getElementById('time-display');
-            const totalPriceDisplay = document.getElementById('total-price-display');
-            const depositDisplay = document.getElementById('deposit-display');
+            // --- Main Logic ---
+            customerInfoForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Store customer info
+                window.cleanQuote.customerName = document.getElementById('customer-name').value;
+                window.cleanQuote.email = document.getElementById('email').value;
 
-            // --- Service Pricing and Score Mappings ---
-            const servicePrices = {
-                'Standard Clean': 120,
-                'Deep Clean': 60,
-                'Inside Fridge': 20,
-                'Inside Oven': 20,
-                'Windows': 40
-            };
-            const cleanlinessDescriptions = {
-                1: 'Very Clean',
-                2: 'Clean',
-                3: 'Average Messiness',
-                4: 'Messy',
-                5: 'Very Messy'
-            };
+                // Hide form and show loader
+                customerInfoForm.classList.add('hidden');
+                loadingView.classList.remove('hidden');
 
-            // --- Calculation Logic ---
-            const calculateEstimate = () => {
-                const { squareFootage, services, cleanlinessScores } = window.cleanQuote;
+                try {
+                    // 1. Load the Teachable Machine model
+                    const modelURL = URL + "model.json";
+                    const metadataURL = URL + "metadata.json";
+                    model = await tmImage.load(modelURL, metadataURL);
 
-                // 1. Calculate base price from services
-                let basePrice = 0;
-                let deepCleanSelected = false;
-                let addonCount = 0;
-
-                services.forEach(service => {
-                    if (service === 'Standard Clean') basePrice += servicePrices['Standard Clean'];
-                    if (service === 'Deep Clean') {
-                        basePrice += servicePrices['Deep Clean'];
-                        deepCleanSelected = true;
+                    // 2. Get photos and analyze them
+                    const photos = window.cleanQuote.photos;
+                    if (!photos || Object.keys(photos).length === 0) {
+                        throw new Error("No photos found. Please go back to the photo upload step.");
                     }
-                    if (service !== 'Standard Clean' && service !== 'Deep Clean') {
-                        basePrice += servicePrices[service] || 0;
-                        addonCount++;
-                    }
-                });
+                    const cleanlinessScores = await analyzePhotos(photos);
+                    window.cleanQuote.cleanlinessScores = cleanlinessScores;
+                    
+                    // 3. Calculate the final quote
+                    const quote = calculateFinalQuote();
+                    window.cleanQuote.finalQuote = quote;
 
-                // Apply package discount logic
-                if (deepCleanSelected && addonCount >= 2) {
-                    const discount = basePrice * 0.10;
-                    basePrice -= discount;
+                    // 4. Find the next available appointment
+                    const appointment = await bookAppointment(quote.totalPrice);
+                    window.cleanQuote.bookingDetails = appointment;
+
+                    // 5. Display the results
+                    displayQuote(quote, appointment);
+                    loadingView.classList.add('hidden');
+                    resultsView.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error("Error during quote generation:", error);
+                    mainContent.innerHTML = `<div class="p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center">An error occurred: ${error.message}</div>`;
                 }
-                
-                // 2. Calculate cleanliness surcharge
+            });
+            
+            const analyzePhotos = async (photos) => {
+                const scores = {};
+                for (const roomName in photos) {
+                    const file = photos[roomName];
+                    const image = await createImageBitmap(file);
+                    const prediction = await model.predict(image);
+                    const highestPrediction = prediction.reduce((prev, current) => (prev.probability > current.probability) ? prev : current);
+                    scores[roomName] = parseInt(highestPrediction.className);
+                }
+                return scores;
+            };
+
+            // ***FIXED***: Quote calculation now uses the price from the previous step and a clearer surcharge logic.
+            const calculateFinalQuote = () => {
+                const { estimatedPrice, cleanlinessScores } = window.cleanQuote;
+                let basePrice = estimatedPrice || 0;
+
                 const scores = Object.values(cleanlinessScores);
-                const sumScores = scores.reduce((sum, score) => sum + score, 0);
-                const avgScore = sumScores / scores.length;
+                const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
                 
-                // Surcharge: $10 per room for every point above "very clean" (score 1)
-                const cleanlinessSurcharge = (avgScore - 1) * 10 * scores.length;
+                // Surcharge is a percentage of the base price, based on the average messiness score.
+                // A score of 3 (Average) has no surcharge.
+                const surchargePercent = (avgScore - 3) * 0.05; // 5% surcharge for each point above 3
+                const cleanlinessSurcharge = basePrice * surchargePercent;
                 
                 const totalPrice = basePrice + cleanlinessSurcharge;
-
-                // 3. Calculate estimated time
-                // Factor: 1 hour per 500 sqft. Factor is 1 for very clean, 1.5 for very messy
-                const cleanlinessFactor = 1 + (avgScore - 1) * (0.5 / 4); // Linearly scales from 1 to 1.5
-                const estimatedTimeHours = (squareFootage / 500) * cleanlinessFactor;
-                const estimatedTimeFormatted = `${estimatedTimeHours.toFixed(1)} hours`;
 
                 return {
                     totalPrice: totalPrice,
                     depositAmount: totalPrice / 2,
-                    estimatedTime: estimatedTimeFormatted
                 };
             };
 
-            // --- Render Function ---
-            const renderEstimate = () => {
-                const { squareFootage, services, floorType, cleanlinessScores } = window.cleanQuote;
-                
-                // Handle cases where data is missing
-                if (!squareFootage || !services || !cleanlinessScores) {
-                    quoteSummaryView.classList.add('hidden');
-                    errorView.classList.remove('hidden');
-                    errorMessageElement.textContent = "Please complete all previous steps to see your estimate.";
-                    return;
-                }
+            // ***ADDED***: Function to call the backend to book an appointment.
+            const bookAppointment = async (totalPrice) => {
+                // Estimated hours based on price. A simple heuristic.
+                const estimatedHours = 2 + (totalPrice / 100); 
 
-                // Populate the UI with data
-                sqftDisplay.textContent = `${squareFootage} sq ft`;
-                floorTypeDisplay.textContent = `${floorType}%`;
-
-                // Render services
-                servicesDisplay.innerHTML = '';
-                services.forEach(service => {
-                    const li = document.createElement('li');
-                    li.textContent = service;
-                    servicesDisplay.appendChild(li);
+                const response = await fetch('/calendar/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: window.cleanQuote.customerName,
+                        email: window.cleanQuote.email,
+                        address: window.cleanQuote.address.street,
+                        estimatedHours: estimatedHours,
+                        preferredStartDate: new Date().toISOString()
+                    }),
                 });
 
-                // Render cleanliness scores
-                cleanlinessDisplay.innerHTML = '';
-                for (const room in cleanlinessScores) {
-                    const score = cleanlinessScores[room];
+                if (!response.ok) {
+                    throw new Error('Could not find an available appointment slot.');
+                }
+                return await response.json();
+            };
+            
+            const displayQuote = (quote, appointment) => {
+                totalPriceElement.textContent = `$${quote.totalPrice.toFixed(2)}`;
+                depositAmountElement.textContent = `$${quote.depositAmount.toFixed(2)}`;
+                
+                // Display cleanliness scores
+                scoresContainer.innerHTML = ''; // Clear previous scores
+                for (const room in window.cleanQuote.cleanlinessScores) {
+                    const score = window.cleanQuote.cleanlinessScores[room];
                     const description = cleanlinessDescriptions[score] || 'N/A';
-                    const div = document.createElement('div');
-                    div.className = 'flex justify-between items-center';
-                    div.innerHTML = `
-                        <span class="capitalize">${room.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                        <span class="font-bold">${description}</span>
+                    const colorClass = getColorClass(score);
+                    const scoreCard = document.createElement('div');
+                    scoreCard.className = 'bg-gray-50 p-3 rounded-lg shadow-sm';
+                    scoreCard.innerHTML = `
+                        <h3 class="capitalize font-semibold text-gray-800">${room.replace('-', ' ')}</h3>
+                        <p class="text-sm text-gray-600">Rating: <span class="font-medium ${colorClass}">${description} (${score})</span></p>
                     `;
-                    cleanlinessDisplay.appendChild(div);
+                    scoresContainer.appendChild(scoreCard);
                 }
 
-                const { totalPrice, depositAmount, estimatedTime } = calculateEstimate();
-                timeDisplay.textContent = estimatedTime;
-                totalPriceDisplay.textContent = `$${totalPrice.toFixed(2)}`;
-                depositDisplay.textContent = `$${depositAmount.toFixed(2)}`;
+                // Display booking info
+                const startDate = new Date(appointment.startTime);
+                bookingInfoElement.innerHTML = `Your appointment is tentatively booked for <strong class="font-bold">${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>.`;
             };
-
-            // --- Event Listener for Payment ---
-            paymentButton.addEventListener('click', async () => {
-                const { totalPrice, depositAmount } = calculateEstimate();
-                const { name, email, address } = window.cleanQuote.customerInfo;
-
-                // Prepare the body for the fetch call
-                const requestBody = {
-                    name,
-                    email,
-                    address,
-                    total_price: totalPrice.toFixed(2),
-                    deposit_amount: depositAmount.toFixed(2)
-                };
-
-                // Show loading state
-                quoteSummaryView.classList.add('hidden');
-                loadingView.classList.remove('hidden');
-
-                const mockBackendUrl = '/stripe/create-checkout';
-
+            
+            bookAndPayButton.addEventListener('click', async () => {
+                bookAndPayButton.disabled = true;
+                bookAndPayButton.textContent = 'Redirecting to payment...';
+                
                 try {
-                    // Simulate a fetch call to the backend
-                    const response = await new Promise((resolve) => {
-                        setTimeout(() => {
-                            // Mock successful response with a checkout URL
-                            resolve({
-                                ok: true,
-                                json: () => Promise.resolve({
-                                    checkout_url: 'https://checkout.stripe.com/mock-session-123'
-                                })
-                            });
-                        }, 1500); // Simulate network delay
+                    const response = await fetch('/stripe/create-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: window.cleanQuote.customerName,
+                            email: window.cleanQuote.email,
+                            address: window.cleanQuote.address.street,
+                            totalPrice: window.cleanQuote.finalQuote.totalPrice,
+                            depositAmount: window.cleanQuote.finalQuote.depositAmount,
+                        }),
                     });
 
                     if (response.ok) {
                         const data = await response.json();
-                        if (data.checkout_url) {
-                            window.location.href = data.checkout_url;
-                        } else {
-                            throw new Error('No checkout URL received.');
-                        }
+                        window.location.href = data.checkout_url;
                     } else {
                         throw new Error('Failed to create a Stripe checkout session.');
                     }
                 } catch (error) {
-                    console.error('Payment error:', error);
-                    loadingView.classList.add('hidden');
-                    errorView.classList.remove('hidden');
-                    errorMessageElement.textContent = "There was an error processing your request. Please try again.";
+                    alert('There was an error processing your payment. Please try again.');
+                    bookAndPayButton.disabled = false;
+                    bookAndPayButton.textContent = 'Book & Pay Deposit';
                 }
             });
-
-            // Initial render
-            renderEstimate();
         });
     </script>
 </body>

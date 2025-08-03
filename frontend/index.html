@@ -6,6 +6,9 @@
     <title>EA4-CleanQuote - Step 1</title>
     <!-- Tailwind CSS via CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* Custom styles for responsiveness and layout */
         body {
@@ -96,6 +99,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // A global object to store data across steps.
+            // This is a simple approach for this multi-page form.
             window.cleanQuote = window.cleanQuote || {};
             
             const form = document.getElementById('address-form');
@@ -103,28 +108,32 @@
             const submitButton = document.getElementById('submit-button');
             const nextStepContainer = document.getElementById('next-step-container');
 
+            // This set contains all the ZIP codes the service operates in.
             const validZips = new Set([
                 "97005", "97006", "97007", "97008", "97075", "97076", "97077", "97223", "97225", "97229",
                 "97133", "97003", "97078", "97123", "97124", "97129", "97291"
             ]);
 
+            // Displays a message to the user, styled for success or error.
             const showMessage = (text, type = 'error') => {
                 messageBox.textContent = text;
                 messageBox.style.display = 'block';
                 if (type === 'success') {
-                    messageBox.className = 'p-4 mt-4 rounded-lg bg-green-100 text-green-700 text-center';
+                    messageBox.className = 'message-box p-4 mt-4 rounded-lg bg-green-100 text-green-700 text-center';
                     // Show the 'Next' button on success
                     nextStepContainer.classList.remove('hidden');
                 } else {
-                    messageBox.className = 'p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center';
+                    messageBox.className = 'message-box p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center';
                     // Hide the 'Next' button on error
                     nextStepContainer.classList.add('hidden');
                 }
             };
 
+            // Handles the form submission.
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
+                // Provide user feedback during the API call
                 submitButton.textContent = 'Checking...';
                 submitButton.disabled = true;
                 messageBox.style.display = 'none';
@@ -138,6 +147,7 @@
                     zip: formData.get('zip')
                 };
 
+                // First, check if the ZIP code is in the valid set.
                 if (!validZips.has(address.zip)) {
                     showMessage("Sorry, we do not serve this ZIP code. Please contact us for a custom quote.");
                     submitButton.textContent = 'Check Property';
@@ -145,6 +155,7 @@
                     return;
                 }
 
+                // The backend endpoint for property lookup.
                 const backendUrl = '/property-lookup';
 
                 try {
@@ -161,17 +172,21 @@
                         let sqft = data.squareFootage;
                         showMessage(`Property verified! Square footage is ${sqft} sq ft. Ready for the next step.`, 'success');
                         
+                        // Store the retrieved data in the global object for the next steps.
                         window.cleanQuote.squareFootage = sqft;
                         window.cleanQuote.address = address;
                         console.log('Successfully retrieved square footage:', sqft);
                     } else {
+                        // If the server returns an error, parse it and throw an error.
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Failed to verify property online.');
                     }
                 } catch (error) {
+                    // ***FIXED***: Display the specific error message from the catch block.
                     console.error('Fetch error:', error);
-                    showMessage("We couldn't verify your property online. Please call us to schedule.");
+                    showMessage(error.message || "We couldn't verify your property online. Please call us to schedule.");
                 } finally {
+                    // Re-enable the button after the process is complete.
                     submitButton.textContent = 'Check Property';
                     submitButton.disabled = false;
                 }
