@@ -1,200 +1,154 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EA4-CleanQuote - Step 2</title>
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
-        }
-        /* ***FIXED***: Replaced @apply with standard CSS for CDN compatibility. */
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            background-color: transparent;
-        }
-        input[type="range"]::-webkit-slider-runnable-track {
-            height: 0.5rem;
-            background-color: #d1d5db; /* gray-300 */
-            border-radius: 9999px;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            margin-top: -0.25rem;
-            width: 1.25rem;
-            height: 1.25rem;
-            background-color: #2563eb; /* blue-600 */
-            border-radius: 9999px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            cursor: pointer;
-        }
-        input[type="range"]:focus {
-            outline: none;
-        }
-        input[type="range"]:focus::-webkit-slider-thumb {
-            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.5);
-        }
-    </style>
-</head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 2: Select Services</h1>
-        <form id="services-form" class="space-y-6">
+// --- ea4-cleanquote Backend Server ---
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors'); 
+const axios = require('axios');
+const path = require('path');
 
-            <!-- Cleaning Services Section -->
-            <div class="space-y-4">
-                <p class="font-semibold text-lg text-gray-800">Cleaning Type</p>
-                <!-- Standard Clean -->
-                <div class="flex items-center">
-                    <!-- ***FIXED***: Removed form-radio and applied direct styling -->
-                    <input type="radio" id="standard-clean" name="base-service" value="Standard Clean" data-price="120" class="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500" checked>
-                    <label for="standard-clean" class="ml-3 text-gray-700">Standard Clean ($120)</label>
-                </div>
-                <!-- Deep Clean -->
-                <div class="flex items-center">
-                    <input type="radio" id="deep-clean" name="base-service" value="Deep Clean" data-price="180" class="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <label for="deep-clean" class="ml-3 text-gray-700">Deep Clean ($180)</label>
-                </div>
+const app = express();
+const port = process.env.PORT || 3001;
 
-                <p class="font-semibold text-lg text-gray-800 pt-4">Add-On Services</p>
-                <!-- Add-on checkboxes -->
-                <div class="space-y-2">
-                    <div class="flex items-center">
-                        <!-- ***FIXED***: Removed form-checkbox and applied direct styling -->
-                        <input type="checkbox" id="inside-fridge" name="add-on" value="Inside Fridge" data-price="20" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="inside-fridge" class="ml-3 text-gray-700">Inside Fridge (+$20)</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input type="checkbox" id="inside-oven" name="add-on" value="Inside Oven" data-price="20" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="inside-oven" class="ml-3 text-gray-700">Inside Oven (+$20)</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input type="checkbox" id="windows" name="add-on" value="Windows" data-price="40" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="windows" class="ml-3 text-gray-700">Windows (+$40)</label>
-                    </div>
-                </div>
-            </div>
+// --- Middleware ---
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-            <!-- Hard Flooring Percentage Input -->
-            <div class="space-y-2 pt-4">
-                <label for="hard-floors-range" class="block text-lg font-semibold text-gray-800">
-                    What % of your home has hard flooring?
-                </label>
-                <div class="flex items-center space-x-4">
-                    <input type="range" id="hard-floors-range" name="hard-floors-range" min="0" max="100" value="50" class="w-full">
-                    <span id="hard-floors-value" class="w-12 text-center text-lg font-medium text-gray-700">50%</span>
-                </div>
-                <p class="text-xs text-gray-500">Note: A small surcharge of $0.50 is added for each percentage point above 50%.</p>
-            </div>
+// --- RentCast API Service ---
+const realEstateAPI = {
+    apiKey: "671796af0835434297f1c016b70353a1",
 
-            <!-- Dynamic Price Display -->
-            <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
-                <span class="text-xl font-bold text-gray-800">Estimated Total:</span>
-                <span id="total-price" class="text-2xl font-extrabold text-blue-600">$0.00</span>
-            </div>
-
-            <!-- Next Button -->
-            <button
-                type="submit"
-                id="next-button"
-                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-            >
-                Next
-            </button>
-        </form>
-
-        <!-- ***FIXED***: Removed unused message box -->
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            window.cleanQuote = window.cleanQuote || {};
+    lookupProperty: async (address) => {
+        try {
+            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
+            console.log(`Making RentCast API call for property: ${fullAddress}`);
             
-            const form = document.getElementById('services-form');
-            const baseServiceInputs = document.querySelectorAll('input[name="base-service"]');
-            const addonInputs = document.querySelectorAll('input[name="add-on"]');
-            const hardFloorsRange = document.getElementById('hard-floors-range');
-            const hardFloorsValue = document.getElementById('hard-floors-value');
-            const totalPriceElement = document.getElementById('total-price');
+            const apiUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(fullAddress)}`;
+            const headers = { 'X-API-KEY': realEstateAPI.apiKey };
+            
+            const response = await axios.get(apiUrl, { headers });
+            
+            const property = response.data[0];
 
-            const updatePrice = () => {
-                let totalPrice = 0;
-                let deepCleanSelected = false;
-                let addonCount = 0;
+            // ***UPDATED***: Extracts bedrooms and bathrooms along with square footage.
+            if (property) {
+                return { 
+                    squareFootage: property.squareFootage,
+                    bedrooms: property.bedrooms,
+                    bathrooms: property.bathrooms
+                };
+            } else {
+                return null;
+            }
 
-                const selectedBase = document.querySelector('input[name="base-service"]:checked');
-                if (selectedBase) {
-                    totalPrice += parseFloat(selectedBase.dataset.price);
-                    if (selectedBase.value === 'Deep Clean') {
-                        deepCleanSelected = true;
+        } catch (error) {
+            console.error('RentCast API lookup error:', error.response?.data || error.message);
+            return null;
+        }
+    }
+};
+
+// --- MOCK Stripe and Calendar Services ---
+const mockStripe = {
+  checkout: {
+    sessions: {
+      create: async (sessionParams) => {
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+        const mockSessionId = 'cs_test_mock_12345';
+        return { url: sessionParams.success_url.replace('{CHECKOUT_SESSION_ID}', mockSessionId) };
+      }
+    }
+  }
+};
+const mockCalendar = {
+    bookedEvents: [
+        { start: new Date(new Date().setHours(10, 0, 0, 0)), end: new Date(new Date().setHours(12, 0, 0, 0)) }
+    ],
+    findNextAvailableSlot: (estimatedHours, preferredDate) => {
+        const businessHoursStart = 9, businessHoursEnd = 17, workWeek = [1, 2, 3, 4, 5];
+        let currentDate = new Date(preferredDate);
+        currentDate.setHours(businessHoursStart, 0, 0, 0);
+        for (let i = 0; i < 30; i++) {
+            if (workWeek.includes(currentDate.getDay())) {
+                for (let hour = businessHoursStart; hour < businessHoursEnd; hour++) {
+                    const slotStart = new Date(currentDate);
+                    slotStart.setHours(hour, 0, 0, 0);
+                    const slotEnd = new Date(slotStart);
+                    slotEnd.setHours(slotEnd.getHours() + Math.ceil(estimatedHours));
+                    if (slotEnd.getHours() <= businessHoursEnd && !mockCalendar.bookedEvents.some(event => slotStart < event.end && slotEnd > event.start)) {
+                        return { status: "booked", startTime: slotStart.toISOString(), endTime: slotEnd.toISOString() };
                     }
                 }
-                
-                addonInputs.forEach(input => {
-                    if (input.checked) {
-                        totalPrice += parseFloat(input.dataset.price);
-                        addonCount++;
-                    }
-                });
-                
-                const hardFloorsPercent = parseInt(hardFloorsRange.value, 10);
-                if (hardFloorsPercent > 50) {
-                    const surcharge = (hardFloorsPercent - 50) * 0.50;
-                    totalPrice += surcharge;
-                }
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+            currentDate.setHours(businessHoursStart, 0, 0, 0);
+        }
+        return null;
+    }
+};
 
-                if (deepCleanSelected && addonCount >= 2) {
-                    const discount = totalPrice * 0.10;
-                    totalPrice -= discount;
-                }
+// --- Backend Routes ---
+app.post('/property-lookup', async (req, res) => {
+    const address = req.body;
+    if (!address.street || !address.city || !address.state || !address.zip) {
+        return res.status(400).json({ error: 'Missing required address fields.' });
+    }
+    try {
+        const propertyData = await realEstateAPI.lookupProperty(address);
+        if (propertyData) {
+            res.status(200).json(propertyData);
+        } else {
+            res.status(404).json({ error: 'Property not found. Please check the address.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to perform API property lookup.' });
+    }
+});
 
-                totalPriceElement.textContent = `$${totalPrice.toFixed(2)}`;
-            };
+app.post('/stripe/create-checkout', async (req, res) => {
+  const { name, email, address, totalPrice, depositAmount } = req.body;
+  if (!name || !email || !address || !depositAmount) {
+    return res.status(400).json({ error: 'Missing required fields for checkout.' });
+  }
+  try {
+    const session = await mockStripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{ price_data: { currency: 'usd', product_data: { name: 'Home Cleaning Deposit' }, unit_amount: Math.round(depositAmount * 100) }, quantity: 1 }],
+      mode: 'payment',
+      success_url: `http://localhost:${port}/step6.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:${port}/estimate-payment.html`,
+      customer_email: email,
+    });
+    res.status(200).json({ checkout_url: session.url });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create checkout session.' });
+  }
+});
 
-            updatePrice();
+app.post('/calendar/book', async (req, res) => {
+    const { estimatedHours, preferredStartDate } = req.body;
+    if (!estimatedHours) {
+        return res.status(400).json({ error: 'Missing required fields for booking.' });
+    }
+    try {
+        const bookingResult = mockCalendar.findNextAvailableSlot(estimatedHours, preferredStartDate);
+        if (bookingResult) {
+            res.status(200).json(bookingResult);
+        } else {
+            res.status(404).json({ error: 'No available time slot could be found.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to book calendar event.' });
+    }
+});
 
-            baseServiceInputs.forEach(input => input.addEventListener('change', updatePrice));
-            addonInputs.forEach(input => input.addEventListener('change', updatePrice));
-            hardFloorsRange.addEventListener('input', (e) => {
-                hardFloorsValue.textContent = `${e.target.value}%`;
-                updatePrice();
-            });
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+});
 
-            // ***FIXED***: Removed unused showMessage function.
-
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                const selectedServices = [];
-                const baseService = document.querySelector('input[name="base-service"]:checked');
-                if (baseService) {
-                    selectedServices.push(baseService.value);
-                }
-                addonInputs.forEach(input => {
-                    if (input.checked) {
-                        selectedServices.push(input.value);
-                    }
-                });
-                
-                window.cleanQuote.services = selectedServices;
-                window.cleanQuote.floorType = parseInt(hardFloorsRange.value, 10);
-                window.cleanQuote.estimatedPrice = parseFloat(totalPriceElement.textContent.replace('$', ''));
-                
-                console.log('Services selected:', window.cleanQuote.services);
-                console.log('Hard floor percentage:', window.cleanQuote.floorType);
-                console.log('Estimated Price:', window.cleanQuote.estimatedPrice);
-                
-                window.location.href = 'photo-upload.html';
-            });
-        });
-    </script>
-</body>
-</html>
+// --- Server Start ---
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+    console.log(`Access the application at: http://localhost:${port}`);
+  });
+}

@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EA4-CleanQuote - Step 4</title>
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,15 +15,12 @@
             font-family: 'Inter', sans-serif;
             background-color: #f7fafc;
         }
-        .message-box {
-            display: none; /* Initially hidden */
-        }
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border-left-color: #2563eb; /* blue-600 */
+            border-left-color: #2563eb;
             animation: spin 1s ease infinite;
         }
         @keyframes spin {
@@ -34,13 +32,12 @@
 <body class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-xl">
         <div id="main-content">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 4: Generate Estimate</h1>
+            <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 4: Your Final Quote</h1>
             
-            <p class="text-gray-600 text-center mb-6">
-                Please provide your details below. Then, we'll analyze your photos to generate the final estimate.
+            <p id="form-intro" class="text-gray-600 text-center mb-6">
+                Please provide your details below. We'll then analyze your photos to generate your final quote.
             </p>
 
-            <!-- ***ADDED***: Form to collect customer name and email. -->
             <form id="customer-info-form" class="space-y-4 mb-8">
                 <div>
                     <label for="customer-name" class="block text-sm font-medium text-gray-700">Full Name</label>
@@ -51,115 +48,94 @@
                     <input type="email" id="email" name="email" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <button type="submit" id="generate-estimate-button" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-green-700 transition-colors">
-                    Generate My Estimate
+                    Analyze Photos & Get My Quote
                 </button>
             </form>
 
-            <!-- Loading state -->
             <div id="loading-view" class="hidden flex-col items-center justify-center space-y-4">
                 <div class="spinner"></div>
-                <p class="text-lg text-gray-600 font-medium">Analyzing your photos...</p>
-                <p class="text-sm text-gray-500">This may take a moment.</p>
+                <p class="text-lg text-gray-600 font-medium">Analyzing Your Photos</p>
+                <p id="loading-text" class="text-sm text-gray-500">Getting started...</p>
             </div>
 
-            <!-- Quote Preview and Results state -->
             <div id="results-view" class="hidden space-y-6">
                 <h2 class="text-2xl font-bold text-gray-800 text-center">Your Quote Is Ready!</h2>
-                <div id="scores-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- Scores will be dynamically inserted here -->
+                
+                <div id="price-breakdown" class="bg-gray-50 p-4 rounded-lg space-y-2">
+                    <!-- Breakdown items will be inserted here by JS -->
                 </div>
                 
-                <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg text-lg font-bold">
-                    <span>Final Price:</span>
-                    <span id="total-price" class="text-2xl font-extrabold text-blue-600"></span>
-                </div>
                 <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg text-lg font-semibold">
                     <span>50% Deposit Due Today:</span>
                     <span id="deposit-amount" class="text-xl font-bold text-green-600"></span>
                 </div>
 
-                <div id="booking-info" class="p-4 rounded-lg bg-blue-50 text-blue-800 text-center">
-                    <!-- Booking info will be inserted here -->
+                <div id="booking-info" class="p-4 rounded-lg bg-blue-50 text-blue-800 flex items-center justify-center text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span id="booking-text"></span>
                 </div>
 
-                <button
-                    id="book-and-pay-button"
-                    class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-                >
+                <button id="book-and-pay-button" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
                     Book & Pay Deposit
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Teachable Machine Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             window.cleanQuote = window.cleanQuote || {};
             
-            // --- Teachable Machine Model & Global Data ---
             const URL = "https://teachablemachine.withgoogle.com/models/AN-JyGm2G/";
             let model;
+            let loadingInterval;
 
-            const cleanlinessDescriptions = {
-                1: 'Very Clean', 2: 'Clean', 3: 'Average', 4: 'Messy', 5: 'Very Messy'
-            };
-            const getColorClass = (score) => {
-                if (score <= 2) return 'text-green-600';
-                if (score === 3) return 'text-yellow-600';
-                return 'text-red-600';
-            };
-
-            // --- UI Element References ---
             const mainContent = document.getElementById('main-content');
             const customerInfoForm = document.getElementById('customer-info-form');
-            const generateEstimateButton = document.getElementById('generate-estimate-button');
+            const formIntro = document.getElementById('form-intro');
             const loadingView = document.getElementById('loading-view');
+            const loadingText = document.getElementById('loading-text');
             const resultsView = document.getElementById('results-view');
-            const scoresContainer = document.getElementById('scores-container');
-            const totalPriceElement = document.getElementById('total-price');
+            const priceBreakdownEl = document.getElementById('price-breakdown');
             const depositAmountElement = document.getElementById('deposit-amount');
             const bookAndPayButton = document.getElementById('book-and-pay-button');
-            const bookingInfoElement = document.getElementById('booking-info');
+            const bookingText = document.getElementById('booking-text');
 
-            // --- Main Logic ---
+            const startLoadingAnimation = () => {
+                const messages = ["Analyzing kitchen photo...", "Assessing living room...", "Checking bathroom surfaces...", "Finalizing your custom quote..."];
+                let index = 0;
+                loadingText.textContent = messages[index];
+                loadingInterval = setInterval(() => {
+                    index = (index + 1) % messages.length;
+                    loadingText.textContent = messages[index];
+                }, 2000);
+            };
+
             customerInfoForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
-                // Store customer info
                 window.cleanQuote.customerName = document.getElementById('customer-name').value;
                 window.cleanQuote.email = document.getElementById('email').value;
-
-                // Hide form and show loader
+                
                 customerInfoForm.classList.add('hidden');
+                formIntro.classList.add('hidden');
                 loadingView.classList.remove('hidden');
+                startLoadingAnimation();
 
                 try {
-                    // 1. Load the Teachable Machine model
-                    const modelURL = URL + "model.json";
-                    const metadataURL = URL + "metadata.json";
-                    model = await tmImage.load(modelURL, metadataURL);
+                    model = await tmImage.load(URL + "model.json", URL + "metadata.json");
 
-                    // 2. Get photos and analyze them
                     const photos = window.cleanQuote.photos;
-                    if (!photos || Object.keys(photos).length === 0) {
-                        throw new Error("No photos found. Please go back to the photo upload step.");
-                    }
+                    if (!photos || Object.keys(photos).length === 0) throw new Error("No photos found.");
+                    
                     const cleanlinessScores = await analyzePhotos(photos);
                     window.cleanQuote.cleanlinessScores = cleanlinessScores;
                     
-                    // 3. Calculate the final quote
                     const quote = calculateFinalQuote();
                     window.cleanQuote.finalQuote = quote;
 
-                    // 4. Find the next available appointment
-                    const appointment = await bookAppointment(quote.totalPrice);
+                    const appointment = await bookAppointment(quote.estimatedTime);
                     window.cleanQuote.bookingDetails = appointment;
 
-                    // 5. Display the results
                     displayQuote(quote, appointment);
                     loadingView.classList.add('hidden');
                     resultsView.classList.remove('hidden');
@@ -167,87 +143,87 @@
                 } catch (error) {
                     console.error("Error during quote generation:", error);
                     mainContent.innerHTML = `<div class="p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center">An error occurred: ${error.message}</div>`;
+                } finally {
+                    clearInterval(loadingInterval);
                 }
             });
             
             const analyzePhotos = async (photos) => {
                 const scores = {};
                 for (const roomName in photos) {
-                    const file = photos[roomName];
-                    const image = await createImageBitmap(file);
+                    const image = await createImageBitmap(photos[roomName]);
                     const prediction = await model.predict(image);
-                    const highestPrediction = prediction.reduce((prev, current) => (prev.probability > current.probability) ? prev : current);
-                    scores[roomName] = parseInt(highestPrediction.className);
+                    const highest = prediction.reduce((p, c) => (p.probability > c.probability) ? p : c);
+                    scores[roomName] = parseInt(highest.className);
                 }
                 return scores;
             };
 
-            // ***FIXED***: Quote calculation now uses the price from the previous step and a clearer surcharge logic.
             const calculateFinalQuote = () => {
-                const { estimatedPrice, cleanlinessScores } = window.cleanQuote;
-                let basePrice = estimatedPrice || 0;
-
+                const { baseEstimatedTime, cleanlinessScores, services } = window.cleanQuote;
+                let finalTime = baseEstimatedTime;
+                
+                const basePrice = baseEstimatedTime * 75;
+                let surcharge = 0;
+                
                 const scores = Object.values(cleanlinessScores);
                 const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
                 
-                // Surcharge is a percentage of the base price, based on the average messiness score.
-                // A score of 3 (Average) has no surcharge.
-                const surchargePercent = (avgScore - 3) * 0.05; // 5% surcharge for each point above 3
-                const cleanlinessSurcharge = basePrice * surchargePercent;
+                if (avgScore >= 4) {
+                    surcharge = basePrice * 0.20;
+                }
                 
-                const totalPrice = basePrice + cleanlinessSurcharge;
+                let totalPrice = basePrice + surcharge;
+                let ecoCharge = 0;
+
+                if (services.isEcoFriendly) {
+                    ecoCharge = totalPrice * 0.05;
+                    totalPrice += ecoCharge;
+                }
 
                 return {
-                    totalPrice: totalPrice,
+                    basePrice, surcharge, ecoCharge, totalPrice,
                     depositAmount: totalPrice / 2,
+                    estimatedTime: finalTime * (avgScore >= 4 ? 1.2 : 1)
                 };
             };
 
-            // ***ADDED***: Function to call the backend to book an appointment.
-            const bookAppointment = async (totalPrice) => {
-                // Estimated hours based on price. A simple heuristic.
-                const estimatedHours = 2 + (totalPrice / 100); 
-
+            const bookAppointment = async (estimatedTime) => {
                 const response = await fetch('/calendar/book', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: window.cleanQuote.customerName,
-                        email: window.cleanQuote.email,
-                        address: window.cleanQuote.address.street,
-                        estimatedHours: estimatedHours,
-                        preferredStartDate: new Date().toISOString()
-                    }),
+                    body: JSON.stringify({ estimatedHours: estimatedTime, preferredStartDate: new Date().toISOString() }),
                 });
-
-                if (!response.ok) {
-                    throw new Error('Could not find an available appointment slot.');
-                }
+                if (!response.ok) throw new Error('Could not find an available appointment slot.');
                 return await response.json();
             };
             
             const displayQuote = (quote, appointment) => {
-                totalPriceElement.textContent = `$${quote.totalPrice.toFixed(2)}`;
+                priceBreakdownEl.innerHTML = `
+                    <div class="flex justify-between items-center text-gray-700">
+                        <span>Base Cleaning Estimate</span>
+                        <span class="font-medium">$${quote.basePrice.toFixed(2)}</span>
+                    </div>
+                    ${quote.surcharge > 0 ? `
+                    <div class="flex justify-between items-center text-gray-700">
+                        <!-- ***UPDATED***: Changed wording to be more transparent -->
+                        <span>Extended Service Time</span>
+                        <span class="font-medium">+$${quote.surcharge.toFixed(2)}</span>
+                    </div>` : ''}
+                    ${quote.ecoCharge > 0 ? `
+                    <div class="flex justify-between items-center text-gray-700">
+                        <span>Eco-Friendly Products</span>
+                        <span class="font-medium">+$${quote.ecoCharge.toFixed(2)}</span>
+                    </div>` : ''}
+                    <div class="flex justify-between items-center text-gray-900 border-t pt-2 mt-2">
+                        <span class="font-bold text-lg">Total</span>
+                        <span class="font-bold text-lg">$${quote.totalPrice.toFixed(2)}</span>
+                    </div>
+                `;
                 depositAmountElement.textContent = `$${quote.depositAmount.toFixed(2)}`;
                 
-                // Display cleanliness scores
-                scoresContainer.innerHTML = ''; // Clear previous scores
-                for (const room in window.cleanQuote.cleanlinessScores) {
-                    const score = window.cleanQuote.cleanlinessScores[room];
-                    const description = cleanlinessDescriptions[score] || 'N/A';
-                    const colorClass = getColorClass(score);
-                    const scoreCard = document.createElement('div');
-                    scoreCard.className = 'bg-gray-50 p-3 rounded-lg shadow-sm';
-                    scoreCard.innerHTML = `
-                        <h3 class="capitalize font-semibold text-gray-800">${room.replace('-', ' ')}</h3>
-                        <p class="text-sm text-gray-600">Rating: <span class="font-medium ${colorClass}">${description} (${score})</span></p>
-                    `;
-                    scoresContainer.appendChild(scoreCard);
-                }
-
-                // Display booking info
                 const startDate = new Date(appointment.startTime);
-                bookingInfoElement.innerHTML = `Your appointment is tentatively booked for <strong class="font-bold">${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>.`;
+                bookingText.innerHTML = `Your appointment is tentatively booked for <strong class="font-semibold">${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>.`;
             };
             
             bookAndPayButton.addEventListener('click', async () => {
@@ -266,13 +242,10 @@
                             depositAmount: window.cleanQuote.finalQuote.depositAmount,
                         }),
                     });
-
                     if (response.ok) {
                         const data = await response.json();
                         window.location.href = data.checkout_url;
-                    } else {
-                        throw new Error('Failed to create a Stripe checkout session.');
-                    }
+                    } else { throw new Error('Failed to create a Stripe checkout session.'); }
                 } catch (error) {
                     alert('There was an error processing your payment. Please try again.');
                     bookAndPayButton.disabled = false;

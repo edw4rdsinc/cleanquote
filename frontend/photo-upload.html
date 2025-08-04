@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EA4-CleanQuote - Step 3</title>
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- EXIF.js library for reading photo metadata -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,237 +14,205 @@
             font-family: 'Inter', sans-serif;
             background-color: #f7fafc;
         }
-        .message-box {
-            display: none; /* Initially hidden */
-        }
         .photo-preview {
             width: 100%;
-            height: 120px;
+            height: 100%;
             object-fit: cover;
-            border-radius: 0.5rem; /* rounded-lg */
-            background-color: #f3f4f6; /* gray-100 */
+            position: absolute;
+            top: 0; left: 0;
+            border-radius: 0.5rem;
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border-left-color: #ffffff;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .upload-box-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .upload-box:hover .upload-box-overlay {
+            opacity: 1;
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-2xl">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 3: Upload Room Photos</h1>
-        
-        <p class="text-gray-600 text-center">
-            Please upload one photo for each of the following rooms. All photos must be taken today.
+    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-3xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">Step 3: Upload Room Photos</h1>
+        <p class="text-gray-600 text-center mb-6">
+            Please upload one recent photo for each room below.
         </p>
-        <p id="validation-message" class="text-sm text-red-500 text-center mt-2 hidden">Please upload all four photos to continue.</p>
+
+        <!-- ***ADDED***: Visual Progress Bar -->
+        <div class="mb-6">
+            <div class="flex justify-between mb-1">
+                <span class="text-base font-medium text-blue-700">Progress</span>
+                <span id="progress-text" class="text-sm font-medium text-blue-700">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+            </div>
+        </div>
 
         <form id="photos-form" class="space-y-6">
-
-            <!-- Photo Upload Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                <!-- Kitchen Photo Upload -->
-                <div class="flex flex-col items-center space-y-2" data-room="kitchen">
-                    <label for="kitchen-photo" class="text-sm font-medium text-gray-700">Kitchen</label>
-                    <div class="relative w-full">
-                        <input type="file" id="kitchen-photo" name="kitchen" accept="image/*" class="sr-only" />
-                        <label for="kitchen-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                            <img id="preview-kitchen" src="" alt="Kitchen preview" class="photo-preview hidden">
-                            <span id="label-kitchen" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-kitchen" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
-                                <!-- Checkmark SVG for success -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </label>
-                    </div>
-                    <p id="error-kitchen" class="text-red-500 text-xs mt-1 hidden"></p>
-                </div>
-                
-                <!-- Living Room Photo Upload -->
-                <div class="flex flex-col items-center space-y-2" data-room="living-room">
-                    <label for="living-room-photo" class="text-sm font-medium text-gray-700">Living Room</label>
-                    <div class="relative w-full">
-                        <input type="file" id="living-room-photo" name="living-room" accept="image/*" class="sr-only" />
-                        <label for="living-room-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                            <img id="preview-living-room" src="" alt="Living room preview" class="photo-preview hidden">
-                            <span id="label-living-room" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-living-room" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </label>
-                    </div>
-                    <p id="error-living-room" class="text-red-500 text-xs mt-1 hidden"></p>
-                </div>
-
-                <!-- Bathroom Photo Upload -->
-                <div class="flex flex-col items-center space-y-2" data-room="bathroom">
-                    <label for="bathroom-photo" class="text-sm font-medium text-gray-700">Main Bathroom</label>
-                    <div class="relative w-full">
-                        <input type="file" id="bathroom-photo" name="bathroom" accept="image/*" class="sr-only" />
-                        <label for="bathroom-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                            <img id="preview-bathroom" src="" alt="Bathroom preview" class="photo-preview hidden">
-                            <span id="label-bathroom" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-bathroom" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </label>
-                    </div>
-                    <p id="error-bathroom" class="text-red-500 text-xs mt-1 hidden"></p>
-                </div>
-
-                <!-- Bedroom Photo Upload -->
-                <div class="flex flex-col items-center space-y-2" data-room="bedroom">
-                    <label for="bedroom-photo" class="text-sm font-medium text-gray-700">A Bedroom</label>
-                    <div class="relative w-full">
-                        <input type="file" id="bedroom-photo" name="bedroom" accept="image/*" class="sr-only" />
-                        <label for="bedroom-photo" class="w-full h-32 flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                            <img id="preview-bedroom" src="" alt="Bedroom preview" class="photo-preview hidden">
-                            <span id="label-bedroom" class="text-gray-500 text-sm">Click to upload</span>
-                            <div id="status-bedroom" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </label>
-                    </div>
-                    <p id="error-bedroom" class="text-red-500 text-xs mt-1 hidden"></p>
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- All 4 upload boxes are generated by JavaScript now -->
             </div>
 
-            <!-- Next Button -->
-            <button
-                type="button"
-                id="next-button"
-                disabled
-                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-                Next
+            <button type="button" id="next-button" disabled class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mt-8">
+                Next: Get My Quote
             </button>
         </form>
-
-        <!-- Message Box for Success/Error -->
-        <div id="message-box" class="message-box p-4 mt-4 rounded-lg text-center"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Global object to store data across steps
             window.cleanQuote = window.cleanQuote || {};
-            window.cleanQuote.photos = {}; // Use an object to store photos by room name
+            window.cleanQuote.photos = {}; 
 
-            const form = document.getElementById('photos-form');
-            const fileInputs = document.querySelectorAll('input[type="file"]');
+            const form = document.querySelector('#photos-form .grid');
             const nextButton = document.getElementById('next-button');
-            const validationMessage = document.getElementById('validation-message');
-            
-            // Function to check if all photos have been successfully validated
-            const checkAllPhotosValid = () => {
-                const requiredRooms = ['kitchen', 'living-room', 'bathroom', 'bedroom'];
-                const allValid = requiredRooms.every(room => window.cleanQuote.photos[room] instanceof File);
-                nextButton.disabled = !allValid;
-                validationMessage.classList.toggle('hidden', allValid);
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            const rooms = [
+                { id: 'kitchen', name: 'Kitchen' },
+                { id: 'living-room', name: 'Living Room' },
+                { id: 'bathroom', name: 'Main Bathroom' },
+                { id: 'bedroom', name: 'A Bedroom' }
+            ];
+
+            // ***UPDATED***: Dynamically create upload boxes
+            rooms.forEach(room => {
+                const uploaderHTML = `
+                    <div class="flex flex-col items-center space-y-2">
+                        <label class="text-sm font-medium text-gray-700">${room.name}</label>
+                        <div class="relative w-full h-32 upload-box">
+                            <input type="file" id="${room.id}-photo" name="${room.id}" accept="image/*" class="sr-only">
+                            <label for="${room.id}-photo" class="w-full h-full flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                                <img id="preview-${room.id}" alt="${room.name} preview" class="photo-preview hidden">
+                                
+                                <!-- Initial State Icon -->
+                                <div id="icon-${room.id}" class="text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    <span class="text-sm mt-2">Upload Photo</span>
+                                </div>
+
+                                <!-- Loading Spinner -->
+                                <div id="spinner-${room.id}" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
+                                    <div class="spinner"></div>
+                                </div>
+                                
+                                <!-- Success State / Replace Button -->
+                                <div id="status-${room.id}" class="upload-box-overlay hidden">
+                                    <div class="text-center text-white font-semibold">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                                        <span class="text-xs">Replace</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        <p id="error-${room.id}" class="text-red-500 text-xs mt-1 h-4"></p>
+                    </div>
+                `;
+                form.innerHTML += uploaderHTML;
+            });
+
+            // ***UPDATED***: Function to manage progress bar
+            const updateProgress = () => {
+                const validPhotos = Object.keys(window.cleanQuote.photos).length;
+                const progress = (validPhotos / rooms.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${Math.round(progress)}%`;
+                nextButton.disabled = validPhotos !== rooms.length;
             };
 
-            // ***FIXED***: Updated function to use file.lastModified as a fallback for date validation.
-            const validatePhotoDate = (file, roomName) => {
+            const validatePhotoDate = (file) => {
                 return new Promise((resolve, reject) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0); // Set to the beginning of today
-
-                    // Check EXIF data first
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
                     EXIF.getData(file, function() {
-                        const dateTimeOriginal = EXIF.getTag(this, 'DateTimeOriginal');
-                        if (dateTimeOriginal) {
-                            const [datePart] = dateTimeOriginal.split(' ');
+                        const dateTime = EXIF.getTag(this, 'DateTimeOriginal');
+                        if (dateTime) {
+                            const [datePart] = dateTime.split(' ');
                             const [year, month, day] = datePart.split(':');
-                            const photoDate = new Date(year, month - 1, day);
-                            if (photoDate.getTime() === today.getTime()) {
-                                resolve(true); // EXIF date is today
-                            } else {
-                                reject(`The ${roomName} photo must be taken today (EXIF date is wrong).`);
-                            }
-                            return;
+                            if (new Date(year, month - 1, day).getTime() === today.getTime()) return resolve();
                         }
-
-                        // Fallback to file.lastModified
-                        const lastModifiedDate = new Date(file.lastModified);
-                        lastModifiedDate.setHours(0, 0, 0, 0); // Normalize to beginning of the day
-
-                        if (lastModifiedDate.getTime() === today.getTime()) {
-                            resolve(true); // File was last modified today
-                        } else {
-                            reject(`The ${roomName} photo must be from today (could not verify EXIF).`);
-                        }
+                        const modifiedDate = new Date(file.lastModified); modifiedDate.setHours(0, 0, 0, 0);
+                        if (modifiedDate.getTime() === today.getTime()) return resolve();
+                        reject(new Error('Photo must be from today.'));
                     });
                 });
             };
 
-            // Event listener for each file input
-            fileInputs.forEach(input => {
+            document.querySelectorAll('input[type="file"]').forEach(input => {
                 input.addEventListener('change', async (e) => {
                     const file = e.target.files[0];
                     const roomName = e.target.name;
                     
-                    const previewElement = document.getElementById(`preview-${roomName}`);
-                    const statusElement = document.getElementById(`status-${roomName}`);
-                    const labelElement = document.getElementById(`label-${roomName}`);
-                    const errorElement = document.getElementById(`error-${roomName}`);
-                    const formControlLabel = document.querySelector(`label[for="${e.target.id}"]`);
+                    const elements = {
+                        preview: document.getElementById(`preview-${roomName}`),
+                        status: document.getElementById(`status-${roomName}`),
+                        icon: document.getElementById(`icon-${roomName}`),
+                        spinner: document.getElementById(`spinner-${roomName}`),
+                        error: document.getElementById(`error-${roomName}`),
+                        label: document.querySelector(`label[for="${e.target.id}"]`),
+                    };
 
-                    // Reset state
-                    previewElement.src = '';
-                    previewElement.classList.add('hidden');
-                    labelElement.classList.remove('hidden');
-                    statusElement.classList.add('hidden');
-                    errorElement.classList.add('hidden');
-                    formControlLabel.classList.remove('border-red-500', 'border-green-500');
+                    // Reset UI
+                    elements.error.textContent = '';
+                    elements.status.classList.add('hidden');
+                    elements.label.classList.remove('border-red-500', 'border-green-500');
                     delete window.cleanQuote.photos[roomName];
 
-                    if (!file) {
-                        checkAllPhotosValid();
-                        return;
-                    }
+                    if (!file) { updateProgress(); return; }
 
-                    // Display a preview of the image
+                    elements.spinner.classList.remove('hidden');
+                    elements.icon.classList.add('hidden');
+                    elements.preview.classList.remove('hidden');
+
                     const reader = new FileReader();
-                    reader.onload = function(event) {
-                        previewElement.src = event.target.result;
-                        previewElement.classList.remove('hidden');
-                        labelElement.classList.add('hidden');
-                    };
+                    reader.onload = e => elements.preview.src = e.target.result;
                     reader.readAsDataURL(file);
 
-                    // Validate the photo date
                     try {
-                        await validatePhotoDate(file, roomName);
-                        // Validation successful
-                        statusElement.classList.remove('hidden');
-                        formControlLabel.classList.add('border-green-500');
-                        formControlLabel.classList.remove('border-red-500');
+                        await new Promise(r => setTimeout(r, 500)); // Simulate processing
+                        await validatePhotoDate(file);
+                        elements.label.classList.add('border-green-500');
+                        elements.status.classList.remove('hidden');
                         window.cleanQuote.photos[roomName] = file;
-                    } catch (errorMessage) {
-                        // Validation failed
-                        errorElement.textContent = errorMessage;
-                        errorElement.classList.remove('hidden');
-                        formControlLabel.classList.add('border-red-500');
-                        formControlLabel.classList.remove('border-green-500');
+                    } catch (err) {
+                        elements.error.textContent = err.message;
+                        elements.label.classList.add('border-red-500');
+                        elements.preview.classList.add('hidden');
+                        elements.icon.classList.remove('hidden');
+                    } finally {
+                        elements.spinner.classList.add('hidden');
+                        updateProgress();
                     }
-                    
-                    checkAllPhotosValid();
                 });
             });
 
-            // Event listener for next button
             nextButton.addEventListener('click', () => {
                 if (!nextButton.disabled) {
                     window.location.href = 'estimate-payment.html';
                 }
             });
 
-            // Initial check in case the user navigates back to this page
-            checkAllPhotosValid();
+            updateProgress(); // Initial call
         });
     </script>
 </body>
