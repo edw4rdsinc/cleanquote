@@ -1,154 +1,224 @@
-// --- ea4-cleanquote Backend Server ---
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors'); 
-const axios = require('axios');
-const path = require('path');
-
-const app = express();
-const port = process.env.PORT || 3001;
-
-// --- Middleware ---
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
-
-// --- RentCast API Service ---
-const realEstateAPI = {
-    apiKey: "671796af0835434297f1c016b70353a1",
-
-    lookupProperty: async (address) => {
-        try {
-            const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
-            console.log(`Making RentCast API call for property: ${fullAddress}`);
-            
-            const apiUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(fullAddress)}`;
-            const headers = { 'X-API-KEY': realEstateAPI.apiKey };
-            
-            const response = await axios.get(apiUrl, { headers });
-            
-            const property = response.data[0];
-
-            // ***UPDATED***: Extracts bedrooms and bathrooms along with square footage.
-            if (property) {
-                return { 
-                    squareFootage: property.squareFootage,
-                    bedrooms: property.bedrooms,
-                    bathrooms: property.bathrooms
-                };
-            } else {
-                return null;
-            }
-
-        } catch (error) {
-            console.error('RentCast API lookup error:', error.response?.data || error.message);
-            return null;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanQuote - Step 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F0F2F5;
         }
-    }
-};
+        /* Brand Colors */
+        .bg-eggshell-white { background-color: #FAF9F7; }
+        .bg-warm-sand { background-color: #D6BFA7; }
+        .text-deep-graphite { color: #2E2E2E; }
+        .hover\:bg-warm-sand-dark:hover { background-color: #c9a88b; }
+        .focus\:ring-warm-sand:focus { --tw-ring-color: #D6BFA7; }
+        .text-warm-sand { color: #D6BFA7; }
 
-// --- MOCK Stripe and Calendar Services ---
-const mockStripe = {
-  checkout: {
-    sessions: {
-      create: async (sessionParams) => {
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-        const mockSessionId = 'cs_test_mock_12345';
-        return { url: sessionParams.success_url.replace('{CHECKOUT_SESSION_ID}', mockSessionId) };
-      }
-    }
-  }
-};
-const mockCalendar = {
-    bookedEvents: [
-        { start: new Date(new Date().setHours(10, 0, 0, 0)), end: new Date(new Date().setHours(12, 0, 0, 0)) }
-    ],
-    findNextAvailableSlot: (estimatedHours, preferredDate) => {
-        const businessHoursStart = 9, businessHoursEnd = 17, workWeek = [1, 2, 3, 4, 5];
-        let currentDate = new Date(preferredDate);
-        currentDate.setHours(businessHoursStart, 0, 0, 0);
-        for (let i = 0; i < 30; i++) {
-            if (workWeek.includes(currentDate.getDay())) {
-                for (let hour = businessHoursStart; hour < businessHoursEnd; hour++) {
-                    const slotStart = new Date(currentDate);
-                    slotStart.setHours(hour, 0, 0, 0);
-                    const slotEnd = new Date(slotStart);
-                    slotEnd.setHours(slotEnd.getHours() + Math.ceil(estimatedHours));
-                    if (slotEnd.getHours() <= businessHoursEnd && !mockCalendar.bookedEvents.some(event => slotStart < event.end && slotEnd > event.start)) {
-                        return { status: "booked", startTime: slotStart.toISOString(), endTime: slotEnd.toISOString() };
-                    }
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        .form-section { opacity: 0; animation: fadeIn 0.5s ease-out forwards; }
+
+        /* Custom UI Elements */
+        .number-input-button {
+            cursor: pointer; user-select: none; width: 2.5rem; height: 2.5rem;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid #d1d5db; background-color: #f9fafb;
+            font-size: 1.5rem; line-height: 1; color: #374151;
+            transition: background-color 0.2s;
+        }
+        .number-input-button:hover { background-color: #f3f4f6; }
+        
+        /* Tooltip Styles */
+        .tooltip-container { position: relative; display: inline-flex; align-items: center; }
+        .tooltip-icon { cursor: pointer; margin-left: 6px; }
+        .tooltip-text {
+            visibility: hidden; width: 220px; background-color: #2E2E2E; color: #fff;
+            text-align: left; border-radius: 6px; padding: 8px;
+            position: absolute; z-index: 1; bottom: 125%; left: 50%;
+            margin-left: -110px; opacity: 0; transition: opacity 0.3s;
+            font-size: 0.75rem; line-height: 1.4;
+        }
+        .tooltip-text ul { list-style-position: inside; padding-left: 4px; }
+        .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-eggshell-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg opacity-0 fade-in">
+        <div class="text-center mb-6">
+            <!-- ***UPDATED***: Changed image path to local file -->
+            <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto">
+        </div>
+        <h1 class="text-3xl font-bold text-deep-graphite mb-2 text-center">Customize Your Cleaning</h1>
+        <p class="text-center text-deep-graphite opacity-80 mb-8">Select your services to build the perfect plan.</p>
+        
+        <form id="services-form" class="space-y-8">
+            
+            <div class="form-section" style="animation-delay: 0.2s;">
+                <h2 class="font-semibold text-lg text-deep-graphite mb-3">Rooms to Clean</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label class="text-deep-graphite">Bedrooms</label>
+                        <div class="flex items-center">
+                            <button type="button" class="number-input-button rounded-l-md" data-field="bedrooms" data-action="decrement">-</button>
+                            <input type="text" id="bedrooms-count" readonly class="w-12 h-10 text-center border-t border-b border-gray-300 font-semibold text-deep-graphite">
+                            <button type="button" class="number-input-button rounded-r-md" data-field="bedrooms" data-action="increment">+</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label class="text-deep-graphite">Bathrooms</label>
+                        <div class="flex items-center">
+                            <button type="button" class="number-input-button rounded-l-md" data-field="bathrooms" data-action="decrement">-</button>
+                            <input type="text" id="bathrooms-count" readonly class="w-12 h-10 text-center border-t border-b border-gray-300 font-semibold text-deep-graphite">
+                            <button type="button" class="number-input-button rounded-r-md" data-field="bathrooms" data-action="increment">+</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label class="text-deep-graphite">Tile Showers <span class="text-xs text-warm-sand font-semibold">(+$10 each)</span></label>
+                        <div class="flex items-center">
+                             <button type="button" class="number-input-button rounded-l-md" data-field="tileShowers" data-action="decrement">-</button>
+                            <input type="text" id="tile-showers-count" readonly class="w-12 h-10 text-center border-t border-b border-gray-300 font-semibold text-deep-graphite" value="0">
+                            <button type="button" class="number-input-button rounded-r-md" data-field="tileShowers" data-action="increment">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 form-section" style="animation-delay: 0.3s;">
+                <div>
+                    <h2 class="font-semibold text-lg text-deep-graphite mb-3">Cleaning Type</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="radio" id="standard-clean" name="cleaning-type" value="Standard" class="h-5 w-5 text-warm-sand border-gray-300 focus:ring-warm-sand" checked>
+                            <label for="standard-clean" class="ml-3 text-deep-graphite tooltip-container">
+                                Standard Clean
+                                <div class="tooltip-icon">
+                                    <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                                </div>
+                                <span class="tooltip-text">Includes:<ul><li>Vacuum/mop floors</li><li>Clean bathrooms</li><li>Wipe kitchen counters</li><li>Clean outside of appliances</li></ul></span>
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="deep-clean" name="cleaning-type" value="Deep" class="h-5 w-5 text-warm-sand border-gray-300 focus:ring-warm-sand">
+                            <label for="deep-clean" class="ml-3 text-deep-graphite tooltip-container">
+                                Deep Clean <span class="text-xs text-warm-sand font-semibold">(+20%)</span>
+                                <div class="tooltip-icon">
+                                     <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                                </div>
+                                <span class="tooltip-text">Includes everything in a Standard Clean, plus:<ul><li>Clean baseboards</li><li>Wipe blinds & sills</li><li>Clean inside fridge & oven</li><li>Wipe down cabinets</li></ul></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-lg text-deep-graphite mb-3">Add-On Services</h2>
+                    <p class="text-xs text-deep-graphite opacity-80">Window cleaning and other additional services available upon request after first clean.</p>
+                </div>
+            </div>
+            
+            <div class="form-section" style="animation-delay: 0.4s;">
+                <h2 class="font-semibold text-lg text-deep-graphite mb-3">Cleaning Products</h2>
+                <div class="flex items-center bg-green-50 p-4 rounded-lg">
+                    <input type="checkbox" id="eco-friendly" name="eco-friendly" class="h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                    <label for="eco-friendly" class="ml-4 text-green-800">Environmentally friendly and pet-safe cleaning products are important to me.</label>
+                </div>
+            </div>
+
+            <button type="submit" id="next-button" class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors mt-8 form-section" style="animation-delay: 0.5s;">
+                Next: Upload Photos
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.cleanQuote = window.cleanQuote || {};
+            const propertyDetails = window.cleanQuote.propertyDetails || { bedrooms: 3, bathrooms: 2, squareFootage: 1700 };
+
+            const form = document.getElementById('services-form');
+            const bedroomsCountEl = document.getElementById('bedrooms-count');
+            const bathroomsCountEl = document.getElementById('bathrooms-count');
+            const tileShowersCountEl = document.getElementById('tile-showers-count');
+
+            let roomCounts = {
+                bedrooms: propertyDetails.bedrooms || 1,
+                bathrooms: propertyDetails.bathrooms || 1,
+                tileShowers: 0
+            };
+            const maxCounts = {
+                bedrooms: roomCounts.bedrooms,
+                bathrooms: roomCounts.bathrooms,
+            };
+            
+            const TIME_CONFIG = {
+                BASE: 1.0, PER_BEDROOM: 0.15, PER_BATHROOM: 0.25, 
+                PER_TILE_SHOWER: 0.13, // ~$10
+                DEEP_CLEAN_MULTIPLIER: 1.5,
+            };
+
+            const calculateBaseTime = () => {
+                let time = TIME_CONFIG.BASE + (roomCounts.bedrooms * TIME_CONFIG.PER_BEDROOM) + (roomCounts.bathrooms * TIME_CONFIG.PER_BATHROOM) + (roomCounts.tileShowers * TIME_CONFIG.PER_TILE_SHOWER);
+                
+                if (document.querySelector('input[name="cleaning-type"]:checked').value === 'Deep') {
+                    time *= TIME_CONFIG.DEEP_CLEAN_MULTIPLIER;
                 }
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-            currentDate.setHours(businessHoursStart, 0, 0, 0);
-        }
-        return null;
-    }
-};
+                window.cleanQuote.baseEstimatedTime = time;
+            };
 
-// --- Backend Routes ---
-app.post('/property-lookup', async (req, res) => {
-    const address = req.body;
-    if (!address.street || !address.city || !address.state || !address.zip) {
-        return res.status(400).json({ error: 'Missing required address fields.' });
-    }
-    try {
-        const propertyData = await realEstateAPI.lookupProperty(address);
-        if (propertyData) {
-            res.status(200).json(propertyData);
-        } else {
-            res.status(404).json({ error: 'Property not found. Please check the address.' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to perform API property lookup.' });
-    }
-});
+            const updateRoomDisplay = () => {
+                bedroomsCountEl.value = roomCounts.bedrooms;
+                bathroomsCountEl.value = roomCounts.bathrooms;
+                tileShowersCountEl.value = roomCounts.tileShowers;
+                if(roomCounts.tileShowers > roomCounts.bathrooms) {
+                    roomCounts.tileShowers = roomCounts.bathrooms;
+                    tileShowersCountEl.value = roomCounts.tileShowers;
+                }
+                calculateBaseTime();
+            };
+            
+            form.addEventListener('click', (e) => {
+                if (e.target.matches('.number-input-button')) {
+                    const field = e.target.dataset.field;
+                    const action = e.target.dataset.action;
+                    if (action === 'increment') {
+                        if (field === 'bedrooms' && roomCounts.bedrooms < maxCounts.bedrooms) roomCounts.bedrooms++;
+                        else if (field === 'bathrooms' && roomCounts.bathrooms < maxCounts.bathrooms) roomCounts.bathrooms++;
+                        else if (field === 'tileShowers' && roomCounts.tileShowers < roomCounts.bathrooms) roomCounts.tileShowers++;
+                    } else if (action === 'decrement') {
+                        if (field === 'bedrooms' && roomCounts.bedrooms > 1) roomCounts.bedrooms--;
+                        else if (field === 'bathrooms' && roomCounts.bathrooms > 1) roomCounts.bathrooms--;
+                        else if (field === 'tileShowers' && roomCounts.tileShowers > 0) roomCounts.tileShowers--;
+                    }
+                    updateRoomDisplay();
+                }
+            });
 
-app.post('/stripe/create-checkout', async (req, res) => {
-  const { name, email, address, totalPrice, depositAmount } = req.body;
-  if (!name || !email || !address || !depositAmount) {
-    return res.status(400).json({ error: 'Missing required fields for checkout.' });
-  }
-  try {
-    const session = await mockStripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{ price_data: { currency: 'usd', product_data: { name: 'Home Cleaning Deposit' }, unit_amount: Math.round(depositAmount * 100) }, quantity: 1 }],
-      mode: 'payment',
-      success_url: `http://localhost:${port}/step6.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `http://localhost:${port}/estimate-payment.html`,
-      customer_email: email,
-    });
-    res.status(200).json({ checkout_url: session.url });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create checkout session.' });
-  }
-});
+            form.addEventListener('change', calculateBaseTime);
 
-app.post('/calendar/book', async (req, res) => {
-    const { estimatedHours, preferredStartDate } = req.body;
-    if (!estimatedHours) {
-        return res.status(400).json({ error: 'Missing required fields for booking.' });
-    }
-    try {
-        const bookingResult = mockCalendar.findNextAvailableSlot(estimatedHours, preferredStartDate);
-        if (bookingResult) {
-            res.status(200).json(bookingResult);
-        } else {
-            res.status(404).json({ error: 'No available time slot could be found.' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to book calendar event.' });
-    }
-});
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                window.cleanQuote.services = {
+                    rooms: roomCounts,
+                    cleaningType: document.querySelector('input[name="cleaning-type"]:checked').value,
+                    addOns: [], 
+                    isEcoFriendly: document.getElementById('eco-friendly').checked
+                };
+                calculateBaseTime();
+                window.location.href = 'photo-upload.html';
+            });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
-});
-
-// --- Server Start ---
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Access the application at: http://localhost:${port}`);
-  });
-}
+            updateRoomDisplay();
+        });
+    </script>
+</body>
+</html>

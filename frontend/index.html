@@ -3,72 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EA4-CleanQuote - Step 1</title>
+    <title>CleanQuote - Step 1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
+            font-family: 'Poppins', sans-serif;
+            background-color: #F0F2F5; /* A slightly darker neutral to make the card pop */
+        }
+        /* Define brand colors for use with Tailwind */
+        .bg-eggshell-white { background-color: #FAF9F7; }
+        .bg-muted-sky { background-color: #B9C6D0; }
+        .bg-warm-sand { background-color: #D6BFA7; }
+        .text-deep-graphite { color: #2E2E2E; }
+        .border-warm-sand { border-color: #D6BFA7; }
+        .hover\:bg-warm-sand-dark:hover { background-color: #c9a88b; } /* A darker shade for hover */
+        
+        /* Animation Keyframes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUpFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        .slide-up-fade-in {
+            animation: slideUpFadeIn 0.5s ease-out forwards;
+        }
+        
+        /* Staggered animation for form elements */
+        .form-element {
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-md">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 1: Enter Property Info</h1>
+    <div id="main-card" class="bg-eggshell-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-md opacity-0 fade-in">
+        <!-- Logo -->
+        <div class="text-center mb-6">
+            <img src="http://googleusercontent.com/file_content/3" alt="CleanQuote Logo" class="w-24 h-24 mx-auto">
+        </div>
+
+        <h1 class="text-3xl font-bold text-deep-graphite mb-2 text-center form-element" style="animation-delay: 0.1s;">Get Your Instant Quote</h1>
+        <!-- ***UPDATED***: New subheading copy -->
+        <p class="text-center text-deep-graphite opacity-80 mb-6 form-element" style="animation-delay: 0.2s;">Fast, accurate, and transparent pricing for your cleaner home.</p>
+        
         <form id="address-form" class="space-y-4">
-            <div>
-                <label for="street" class="block text-sm font-medium text-gray-700">Street Address</label>
-                <input type="text" id="street" name="street" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="form-element" style="animation-delay: 0.3s;">
+                <label for="street" class="block text-sm font-medium text-deep-graphite">Street Address</label>
+                <input type="text" id="street" name="street" required class="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-warm-sand">
             </div>
-            <div>
-                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
-                <input type="text" id="city" name="city" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="form-element" style="animation-delay: 0.4s;">
+                <label for="city" class="block text-sm font-medium text-deep-graphite">City</label>
+                <input type="text" id="city" name="city" required class="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-warm-sand">
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4 form-element" style="animation-delay: 0.5s;">
                 <div>
-                    <label for="state" class="block text-sm font-medium text-gray-700">State</label>
-                    <select id="state" name="state" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="state" class="block text-sm font-medium text-deep-graphite">State</label>
+                    <select id="state" name="state" required class="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-warm-sand">
                         <option value="OR" selected>Oregon</option>
                     </select>
                 </div>
                 <div>
-                    <label for="zip" class="block text-sm font-medium text-gray-700">ZIP Code</label>
-                    <input type="text" id="zip" name="zip" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="zip" class="block text-sm font-medium text-deep-graphite">ZIP Code</label>
+                    <input type="text" id="zip" name="zip" required class="mt-1 w-full p-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-warm-sand">
                 </div>
             </div>
-            <button type="submit" id="submit-button" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+             <!-- Trust badge copy -->
+            <p class="text-xs text-center text-deep-graphite opacity-60 pt-2 form-element" style="animation-delay: 0.6s;">All cleaners are background-checked and insured.</p>
+            <button type="submit" id="submit-button" class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors form-element" style="animation-delay: 0.7s;">
                 Check Property
             </button>
         </form>
+        
+        <!-- Privacy reassurance -->
+        <p class="text-xs text-center text-deep-graphite opacity-60 mt-4">🔒 We respect your privacy and will never share your address.</p>
 
-        <!-- Message Box for Status/Error -->
         <div id="message-box" class="hidden p-4 mt-4 rounded-lg text-center"></div>
         
-        <!-- ***UPDATED***: Container for cleaner info, shown after verification -->
         <div id="results-container" class="hidden mt-6 space-y-4">
-            <!-- Cleaner Profile Card -->
-            <div id="cleaner-profile" class="text-center">
-                <h3 class="font-bold text-lg text-gray-800 mb-3">Here's Your Local CleanQuote Team</h3>
-                <div class="flex flex-col items-center bg-blue-50 p-4 rounded-lg">
+            <div id="cleaner-profile" class="text-center bg-muted-sky bg-opacity-40 p-4 rounded-lg">
+                <h3 class="font-bold text-lg text-deep-graphite mb-3">Here's Your Local CleanQuote Team</h3>
+                <div class="flex flex-col items-center">
                     <img id="cleaner-photo" class="w-20 h-20 rounded-full object-cover border-2 border-white shadow-md mb-3" src="" alt="Cleaner photo">
-                    <p id="cleaner-welcome" class="text-gray-700 font-medium"></p>
-                    <p id="cleaner-bio" class="text-sm text-gray-600 mt-1"></p>
+                    <p id="cleaner-welcome" class="text-deep-graphite font-medium"></p>
+                    <p id="cleaner-bio" class="text-sm text-deep-graphite opacity-80 mt-1"></p>
                 </div>
             </div>
         </div>
 
-        <!-- Next Step Button (initially hidden) -->
         <div id="next-step-container" class="hidden mt-6">
             <button id="next-step-button" class="w-full text-center bg-green-500 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-green-600 transition-colors">
                 Continue to Next Step
             </button>
         </div>
     </div>
-
-    <!-- ***REMOVED***: Modal pop-up is no longer needed in this step. -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -90,8 +128,9 @@
 
             const showMessage = (text, type = 'error') => {
                 messageBox.textContent = text;
-                messageBox.className = `p-4 mt-4 rounded-lg text-center ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+                messageBox.className = `p-4 mt-4 rounded-lg text-center ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`;
                 messageBox.classList.remove('hidden');
+                messageBox.classList.add('slide-up-fade-in');
             };
 
             form.addEventListener('submit', async (e) => {
@@ -103,45 +142,35 @@
                 nextStepContainer.classList.add('hidden');
 
                 const formData = new FormData(form);
-                const address = {
-                    street: formData.get('street'),
-                    city: formData.get('city'),
-                    state: formData.get('state'),
-                    zip: formData.get('zip')
-                };
+                const address = { street: formData.get('street'), city: formData.get('city'), state: formData.get('state'), zip: formData.get('zip') };
 
                 try {
-                    const response = await fetch('/property-lookup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(address)
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        // ***UPDATED***: Create the dynamic success message as requested.
-                        const beds = data.bedrooms || 'N/A';
-                        const baths = data.bathrooms || 'N/A';
-                        const sqft = data.squareFootage || 'N/A';
-                        const successText = `Great! We've found your ${beds} bedroom, ${baths} bathroom house with ${sqft} sq ft.`;
-                        showMessage(successText, 'success');
-                        
-                        window.cleanQuote.propertyDetails = data;
-                        window.cleanQuote.address = address;
-
-                        // Display cleaner info
-                        const cleaner = cleanerMap[address.zip] || defaultCleaner;
-                        document.getElementById('cleaner-photo').src = cleaner.photo;
-                        document.getElementById('cleaner-welcome').textContent = cleaner.welcome;
-                        document.getElementById('cleaner-bio').textContent = cleaner.bio;
-
-                        resultsContainer.classList.remove('hidden');
-                        nextStepContainer.classList.remove('hidden');
-                    } else {
+                    const response = await fetch('/property-lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(address) });
+                    if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.error || 'Failed to verify property.');
                     }
+                    const data = await response.json();
+                    
+                    const beds = data.bedrooms || 'N/A';
+                    const baths = data.bathrooms || 'N/A';
+                    const sqft = data.squareFootage || 'N/A';
+                    const successText = `Great! We've found your ${beds} bed, ${baths} bath home with ${sqft} sq ft.`;
+                    showMessage(successText, 'success');
+                    
+                    window.cleanQuote.propertyDetails = data;
+                    window.cleanQuote.address = address;
+
+                    const cleaner = cleanerMap[address.zip] || defaultCleaner;
+                    document.getElementById('cleaner-photo').src = cleaner.photo;
+                    document.getElementById('cleaner-welcome').textContent = cleaner.welcome;
+                    document.getElementById('cleaner-bio').textContent = cleaner.bio;
+
+                    resultsContainer.classList.remove('hidden');
+                    resultsContainer.classList.add('slide-up-fade-in');
+                    nextStepContainer.classList.remove('hidden');
+                    nextStepContainer.classList.add('slide-up-fade-in');
+
                 } catch (error) {
                     showMessage(error.message);
                 } finally {
@@ -150,7 +179,6 @@
                 }
             });
 
-            // ***UPDATED***: Button now navigates directly to the next page.
             nextStepButton.addEventListener('click', () => {
                 window.location.href = 'serviceform.html';
             });

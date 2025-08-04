@@ -3,77 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EA4-CleanQuote - Step 3</title>
+    <title>CleanQuote - Step 3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
+            font-family: 'Poppins', sans-serif;
+            background-color: #F0F2F5;
         }
+        /* Brand Colors */
+        .bg-eggshell-white { background-color: #FAF9F7; }
+        .bg-warm-sand { background-color: #D6BFA7; }
+        .text-deep-graphite { color: #2E2E2E; }
+        .hover\:bg-warm-sand-dark:hover { background-color: #c9a88b; }
+        .border-warm-sand { border-color: #D6BFA7; }
+        .hover\:border-warm-sand:hover { border-color: #D6BFA7; }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        .form-section { opacity: 0; animation: fadeIn 0.5s ease-out forwards; }
+
+        /* Custom UI Elements */
         .photo-preview {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0; left: 0;
-            border-radius: 0.5rem;
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; top: 0; left: 0; border-radius: 0.5rem;
         }
         .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border-left-color: #ffffff;
+            border: 3px solid rgba(255, 255, 255, 0.3); width: 28px; height: 28px;
+            border-radius: 50%; border-left-color: #ffffff;
             animation: spin 1s ease infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         .upload-box-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 0.5rem;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            background-color: rgba(46, 46, 46, 0.6); /* Deep Graphite with opacity */
+            border-radius: 0.5rem; opacity: 0; transition: opacity 0.2s ease-in-out;
         }
-        .upload-box:hover .upload-box-overlay {
-            opacity: 1;
-        }
+        .upload-box:hover .upload-box-overlay { opacity: 1; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-3xl">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">Step 3: Upload Room Photos</h1>
-        <p class="text-gray-600 text-center mb-6">
-            Please upload one recent photo for each room below.
+    <div class="bg-eggshell-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-3xl opacity-0 fade-in">
+        <div class="text-center mb-6">
+            <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto">
+        </div>
+        <h1 class="text-3xl font-bold text-deep-graphite mb-2 text-center">Upload Room Photos</h1>
+        <p class="text-deep-graphite opacity-80 text-center mb-6">
+            To ensure an accurate quote, please upload one photo for each of the rooms listed below, taken today.
         </p>
 
-        <!-- ***ADDED***: Visual Progress Bar -->
-        <div class="mb-6">
+        <div class="mb-6 form-section" style="animation-delay: 0.2s;">
             <div class="flex justify-between mb-1">
-                <span class="text-base font-medium text-blue-700">Progress</span>
-                <span id="progress-text" class="text-sm font-medium text-blue-700">0%</span>
+                <span class="text-base font-medium text-deep-graphite">Progress</span>
+                <span id="progress-text" class="text-sm font-medium text-deep-graphite">0%</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2.5">
-                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+                <div id="progress-bar" class="bg-warm-sand h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
             </div>
         </div>
 
         <form id="photos-form" class="space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- All 4 upload boxes are generated by JavaScript now -->
+                <!-- Upload boxes are generated by JavaScript -->
             </div>
-
-            <button type="button" id="next-button" disabled class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mt-8">
+            <button type="button" id="next-button" disabled class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed mt-8 form-section" style="animation-delay: 0.7s;">
                 Next: Get My Quote
             </button>
         </form>
@@ -84,7 +85,7 @@
             window.cleanQuote = window.cleanQuote || {};
             window.cleanQuote.photos = {}; 
 
-            const form = document.querySelector('#photos-form .grid');
+            const formGrid = document.querySelector('#photos-form .grid');
             const nextButton = document.getElementById('next-button');
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
@@ -96,28 +97,19 @@
                 { id: 'bedroom', name: 'A Bedroom' }
             ];
 
-            // ***UPDATED***: Dynamically create upload boxes
-            rooms.forEach(room => {
+            rooms.forEach((room, index) => {
                 const uploaderHTML = `
-                    <div class="flex flex-col items-center space-y-2">
-                        <label class="text-sm font-medium text-gray-700">${room.name}</label>
+                    <div class="flex flex-col items-center space-y-2 form-section" style="animation-delay: ${0.3 + index * 0.1}s;">
+                        <label class="text-sm font-medium text-deep-graphite">${room.name}</label>
                         <div class="relative w-full h-32 upload-box">
                             <input type="file" id="${room.id}-photo" name="${room.id}" accept="image/*" class="sr-only">
-                            <label for="${room.id}-photo" class="w-full h-full flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <label for="${room.id}-photo" class="w-full h-full flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-warm-sand transition-colors">
                                 <img id="preview-${room.id}" alt="${room.name} preview" class="photo-preview hidden">
-                                
-                                <!-- Initial State Icon -->
                                 <div id="icon-${room.id}" class="text-gray-400">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                     <span class="text-sm mt-2">Upload Photo</span>
                                 </div>
-
-                                <!-- Loading Spinner -->
-                                <div id="spinner-${room.id}" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg">
-                                    <div class="spinner"></div>
-                                </div>
-                                
-                                <!-- Success State / Replace Button -->
+                                <div id="spinner-${room.id}" class="absolute inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 rounded-lg"><div class="spinner"></div></div>
                                 <div id="status-${room.id}" class="upload-box-overlay hidden">
                                     <div class="text-center text-white font-semibold">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
@@ -129,10 +121,9 @@
                         <p id="error-${room.id}" class="text-red-500 text-xs mt-1 h-4"></p>
                     </div>
                 `;
-                form.innerHTML += uploaderHTML;
+                formGrid.innerHTML += uploaderHTML;
             });
 
-            // ***UPDATED***: Function to manage progress bar
             const updateProgress = () => {
                 const validPhotos = Object.keys(window.cleanQuote.photos).length;
                 const progress = (validPhotos / rooms.length) * 100;
@@ -172,7 +163,6 @@
                         label: document.querySelector(`label[for="${e.target.id}"]`),
                     };
 
-                    // Reset UI
                     elements.error.textContent = '';
                     elements.status.classList.add('hidden');
                     elements.label.classList.remove('border-red-500', 'border-green-500');
@@ -189,7 +179,7 @@
                     reader.readAsDataURL(file);
 
                     try {
-                        await new Promise(r => setTimeout(r, 500)); // Simulate processing
+                        await new Promise(r => setTimeout(r, 500));
                         await validatePhotoDate(file);
                         elements.label.classList.add('border-green-500');
                         elements.status.classList.remove('hidden');
@@ -212,7 +202,7 @@
                 }
             });
 
-            updateProgress(); // Initial call
+            updateProgress();
         });
     </script>
 </body>

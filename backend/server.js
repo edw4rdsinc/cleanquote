@@ -13,33 +13,20 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// --- RentCast API Service ---
+// --- RentCast API Service (Unchanged) ---
 const realEstateAPI = {
     apiKey: "671796af0835434297f1c016b70353a1",
-
     lookupProperty: async (address) => {
         try {
             const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
-            console.log(`Making RentCast API call for property: ${fullAddress}`);
-            
             const apiUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(fullAddress)}`;
             const headers = { 'X-API-KEY': realEstateAPI.apiKey };
-            
             const response = await axios.get(apiUrl, { headers });
-            
             const property = response.data[0];
-
-            // ***UPDATED***: Extracts bedrooms and bathrooms along with square footage.
             if (property) {
-                return { 
-                    squareFootage: property.squareFootage,
-                    bedrooms: property.bedrooms,
-                    bathrooms: property.bathrooms
-                };
-            } else {
-                return null;
+                return { squareFootage: property.squareFootage, bedrooms: property.bedrooms, bathrooms: property.bathrooms };
             }
-
+            return null;
         } catch (error) {
             console.error('RentCast API lookup error:', error.response?.data || error.message);
             return null;
@@ -47,7 +34,7 @@ const realEstateAPI = {
     }
 };
 
-// --- MOCK Stripe and Calendar Services ---
+// --- MOCK Stripe Service (Unchanged) ---
 const mockStripe = {
   checkout: {
     sessions: {
@@ -59,64 +46,67 @@ const mockStripe = {
     }
   }
 };
+
+// --- MOCK Calendar Service ---
 const mockCalendar = {
-    bookedEvents: [
-        { start: new Date(new Date().setHours(10, 0, 0, 0)), end: new Date(new Date().setHours(12, 0, 0, 0)) }
-    ],
-    findNextAvailableSlot: (estimatedHours, preferredDate) => {
-        const businessHoursStart = 9, businessHoursEnd = 17, workWeek = [1, 2, 3, 4, 5];
-        let currentDate = new Date(preferredDate);
-        currentDate.setHours(businessHoursStart, 0, 0, 0);
-        for (let i = 0; i < 30; i++) {
-            if (workWeek.includes(currentDate.getDay())) {
-                for (let hour = businessHoursStart; hour < businessHoursEnd; hour++) {
-                    const slotStart = new Date(currentDate);
-                    slotStart.setHours(hour, 0, 0, 0);
-                    const slotEnd = new Date(slotStart);
-                    slotEnd.setHours(slotEnd.getHours() + Math.ceil(estimatedHours));
-                    if (slotEnd.getHours() <= businessHoursEnd && !mockCalendar.bookedEvents.some(event => slotStart < event.end && slotEnd > event.start)) {
-                        return { status: "booked", startTime: slotStart.toISOString(), endTime: slotEnd.toISOString() };
-                    }
-                }
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-            currentDate.setHours(businessHoursStart, 0, 0, 0);
+    bookedEvents: [], // Start with an empty calendar for each server run
+    // ***UPDATED***: Function now generates mock availability for the next 14 days
+    getAvailability: () => {
+        const availability = {};
+        const today = new Date();
+        const possibleSlots = ['09:00', '11:00', '13:00', '15:00'];
+        // ***FIXED***: Changed loop from 7 to 14 to show two weeks of availability.
+        for (let i = 0; i < 14; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
+            
+            // Simulate some slots being booked
+            availability[dateString] = possibleSlots.filter(() => Math.random() > 0.3);
         }
-        return null;
+        return availability;
+    },
+    bookSlot: (startTimeISO) => {
+        const startTime = new Date(startTimeISO);
+        mockCalendar.bookedEvents.push({ start: startTime });
+        return true;
     }
 };
 
 // --- Backend Routes ---
 app.post('/property-lookup', async (req, res) => {
-    const address = req.body;
-    if (!address.street || !address.city || !address.state || !address.zip) {
-        return res.status(400).json({ error: 'Missing required address fields.' });
+    const propertyData = await realEstateAPI.lookupProperty(req.body);
+    if (propertyData) res.status(200).json(propertyData);
+    else res.status(404).json({ error: 'Property not found.' });
+});
+
+app.get('/calendar/availability', (req, res) => {
+    res.status(200).json(mockCalendar.getAvailability());
+});
+
+app.post('/calendar/book', (req, res) => {
+    const { startTime, estimatedHours } = req.body;
+    if (!startTime || !estimatedHours) {
+        return res.status(400).json({ error: 'Missing required fields for booking.' });
     }
-    try {
-        const propertyData = await realEstateAPI.lookupProperty(address);
-        if (propertyData) {
-            res.status(200).json(propertyData);
-        } else {
-            res.status(404).json({ error: 'Property not found. Please check the address.' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to perform API property lookup.' });
+    const success = mockCalendar.bookSlot(startTime);
+    if (success) {
+        const endTime = new Date(new Date(startTime).getTime() + estimatedHours * 60 * 60 * 1000);
+        res.status(200).json({ status: "booked", startTime, endTime: endTime.toISOString() });
+    } else {
+        res.status(409).json({ error: 'Time slot is no longer available.' }); // 409 Conflict
     }
 });
 
 app.post('/stripe/create-checkout', async (req, res) => {
-  const { name, email, address, totalPrice, depositAmount } = req.body;
-  if (!name || !email || !address || !depositAmount) {
-    return res.status(400).json({ error: 'Missing required fields for checkout.' });
-  }
+  const { depositAmount } = req.body;
   try {
     const session = await mockStripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [{ price_data: { currency: 'usd', product_data: { name: 'Home Cleaning Deposit' }, unit_amount: Math.round(depositAmount * 100) }, quantity: 1 }],
+      line_items: [{ price_data: { currency: 'usd', product_data: { name: 'Simple Home Cleaning Deposit' }, unit_amount: Math.round(depositAmount * 100) }, quantity: 1 }],
       mode: 'payment',
       success_url: `http://localhost:${port}/step6.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `http://localhost:${port}/estimate-payment.html`,
-      customer_email: email,
     });
     res.status(200).json({ checkout_url: session.url });
   } catch (error) {
@@ -124,31 +114,6 @@ app.post('/stripe/create-checkout', async (req, res) => {
   }
 });
 
-app.post('/calendar/book', async (req, res) => {
-    const { estimatedHours, preferredStartDate } = req.body;
-    if (!estimatedHours) {
-        return res.status(400).json({ error: 'Missing required fields for booking.' });
-    }
-    try {
-        const bookingResult = mockCalendar.findNextAvailableSlot(estimatedHours, preferredStartDate);
-        if (bookingResult) {
-            res.status(200).json(bookingResult);
-        } else {
-            res.status(404).json({ error: 'No available time slot could be found.' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to book calendar event.' });
-    }
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html')));
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
-});
-
-// --- Server Start ---
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Access the application at: http://localhost:${port}`);
-  });
-}
+app.listen(port, () => console.log(`Server running at http://localhost:${port}`));

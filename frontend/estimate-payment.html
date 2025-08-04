@@ -7,147 +7,109 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #2563eb;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #2563eb; animation: spin 1s ease infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .time-slot { transition: all 0.2s ease-in-out; }
+        .time-slot.selected { background-color: #2563eb; color: white; font-weight: 600; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-xl">
+    <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-2xl">
         <div id="main-content">
             <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Step 4: Your Final Quote</h1>
-            
-            <p id="form-intro" class="text-gray-600 text-center mb-6">
-                Please provide your details below. We'll then analyze your photos to generate your final quote.
-            </p>
-
+            <p id="form-intro" class="text-gray-600 text-center mb-6">Please provide your details to continue.</p>
             <form id="customer-info-form" class="space-y-4 mb-8">
                 <div>
                     <label for="customer-name" class="block text-sm font-medium text-gray-700">Full Name</label>
-                    <input type="text" id="customer-name" name="customer-name" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="customer-name" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
-                    <input type="email" id="email" name="email" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="email" id="email" required class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
-                <button type="submit" id="generate-estimate-button" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-green-700 transition-colors">
-                    Analyze Photos & Get My Quote
-                </button>
+                <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-green-700">Analyze Photos & Build Quote</button>
             </form>
-
-            <div id="loading-view" class="hidden flex-col items-center justify-center space-y-4">
-                <div class="spinner"></div>
-                <p class="text-lg text-gray-600 font-medium">Analyzing Your Photos</p>
-                <p id="loading-text" class="text-sm text-gray-500">Getting started...</p>
-            </div>
-
+            <div id="loading-view" class="hidden flex-col items-center space-y-4"><div class="spinner"></div><p id="loading-text" class="text-lg text-gray-600">Analyzing photos...</p></div>
             <div id="results-view" class="hidden space-y-6">
-                <h2 class="text-2xl font-bold text-gray-800 text-center">Your Quote Is Ready!</h2>
-                
-                <div id="price-breakdown" class="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <!-- Breakdown items will be inserted here by JS -->
+                <!-- Subscription Options -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">1. Choose Your Frequency</h2>
+                    <div id="subscription-options" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
                 </div>
-                
-                <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg text-lg font-semibold">
-                    <span>50% Deposit Due Today:</span>
-                    <span id="deposit-amount" class="text-xl font-bold text-green-600"></span>
+                <!-- Calendar Booking -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">2. Select an Arrival Time</h2>
+                    <div id="calendar-container" class="bg-gray-50 p-4 rounded-lg"></div>
                 </div>
-
-                <div id="booking-info" class="p-4 rounded-lg bg-blue-50 text-blue-800 flex items-center justify-center text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span id="booking-text"></span>
+                <!-- Final Summary -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">3. Confirm and Pay</h2>
+                    <div class="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
+                        <span class="text-lg font-semibold">50% Deposit Due Today:</span>
+                        <span id="deposit-amount" class="text-2xl font-bold text-green-600"></span>
+                    </div>
                 </div>
-
-                <button id="book-and-pay-button" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
-                    Book & Pay Deposit
-                </button>
+                <button id="book-and-pay-button" disabled class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">Book & Pay Deposit</button>
             </div>
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             window.cleanQuote = window.cleanQuote || {};
-            
             const URL = "https://teachablemachine.withgoogle.com/models/AN-JyGm2G/";
-            let model;
-            let loadingInterval;
+            let model, loadingInterval, finalQuote, selectedTimeSlot;
 
-            const mainContent = document.getElementById('main-content');
-            const customerInfoForm = document.getElementById('customer-info-form');
-            const formIntro = document.getElementById('form-intro');
-            const loadingView = document.getElementById('loading-view');
-            const loadingText = document.getElementById('loading-text');
-            const resultsView = document.getElementById('results-view');
-            const priceBreakdownEl = document.getElementById('price-breakdown');
-            const depositAmountElement = document.getElementById('deposit-amount');
-            const bookAndPayButton = document.getElementById('book-and-pay-button');
-            const bookingText = document.getElementById('booking-text');
-
-            const startLoadingAnimation = () => {
-                const messages = ["Analyzing kitchen photo...", "Assessing living room...", "Checking bathroom surfaces...", "Finalizing your custom quote..."];
-                let index = 0;
-                loadingText.textContent = messages[index];
-                loadingInterval = setInterval(() => {
-                    index = (index + 1) % messages.length;
-                    loadingText.textContent = messages[index];
-                }, 2000);
+            const elements = {
+                main: document.getElementById('main-content'),
+                form: document.getElementById('customer-info-form'),
+                intro: document.getElementById('form-intro'),
+                loading: document.getElementById('loading-view'),
+                loadingText: document.getElementById('loading-text'),
+                results: document.getElementById('results-view'),
+                subscriptionOptions: document.getElementById('subscription-options'),
+                calendarContainer: document.getElementById('calendar-container'),
+                depositAmount: document.getElementById('deposit-amount'),
+                payButton: document.getElementById('book-and-pay-button'),
             };
 
-            customerInfoForm.addEventListener('submit', async (e) => {
+            elements.form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 window.cleanQuote.customerName = document.getElementById('customer-name').value;
                 window.cleanQuote.email = document.getElementById('email').value;
-                
-                customerInfoForm.classList.add('hidden');
-                formIntro.classList.add('hidden');
-                loadingView.classList.remove('hidden');
+                elements.form.classList.add('hidden');
+                elements.intro.classList.add('hidden');
+                elements.loading.classList.remove('hidden');
                 startLoadingAnimation();
 
                 try {
                     model = await tmImage.load(URL + "model.json", URL + "metadata.json");
-
-                    const photos = window.cleanQuote.photos;
-                    if (!photos || Object.keys(photos).length === 0) throw new Error("No photos found.");
-                    
-                    const cleanlinessScores = await analyzePhotos(photos);
-                    window.cleanQuote.cleanlinessScores = cleanlinessScores;
-                    
-                    const quote = calculateFinalQuote();
-                    window.cleanQuote.finalQuote = quote;
-
-                    const appointment = await bookAppointment(quote.estimatedTime);
-                    window.cleanQuote.bookingDetails = appointment;
-
-                    displayQuote(quote, appointment);
-                    loadingView.classList.add('hidden');
-                    resultsView.classList.remove('hidden');
-
+                    const scores = await analyzePhotos(window.cleanQuote.photos);
+                    window.cleanQuote.cleanlinessScores = scores;
+                    finalQuote = calculateFinalQuote();
+                    displaySubscriptionOptions();
+                    await displayCalendar();
+                    elements.loading.classList.add('hidden');
+                    elements.results.classList.remove('hidden');
                 } catch (error) {
-                    console.error("Error during quote generation:", error);
-                    mainContent.innerHTML = `<div class="p-4 mt-4 rounded-lg bg-red-100 text-red-700 text-center">An error occurred: ${error.message}</div>`;
+                    elements.main.innerHTML = `<div class="p-4 rounded-lg bg-red-100 text-red-700 text-center">Error: ${error.message}</div>`;
                 } finally {
                     clearInterval(loadingInterval);
                 }
             });
-            
+
+            const startLoadingAnimation = () => {
+                const messages = ["Analyzing kitchen photo...", "Assessing living room...", "Checking bathroom surfaces...", "Finalizing your custom quote..."];
+                let index = 0;
+                elements.loadingText.textContent = messages[index];
+                loadingInterval = setInterval(() => {
+                    index = (index + 1) % messages.length;
+                    elements.loadingText.textContent = messages[index];
+                }, 2000);
+            };
+
             const analyzePhotos = async (photos) => {
                 const scores = {};
                 for (const roomName in photos) {
@@ -162,94 +124,96 @@
             const calculateFinalQuote = () => {
                 const { baseEstimatedTime, cleanlinessScores, services } = window.cleanQuote;
                 let finalTime = baseEstimatedTime;
-                
-                const basePrice = baseEstimatedTime * 75;
-                let surcharge = 0;
-                
                 const scores = Object.values(cleanlinessScores);
-                const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-                
-                if (avgScore >= 4) {
-                    surcharge = basePrice * 0.20;
-                }
-                
-                let totalPrice = basePrice + surcharge;
-                let ecoCharge = 0;
-
-                if (services.isEcoFriendly) {
-                    ecoCharge = totalPrice * 0.05;
-                    totalPrice += ecoCharge;
-                }
-
+                const avgScore = scores.reduce((s, c) => s + c, 0) / scores.length;
+                if (avgScore >= 4) finalTime *= 1.20;
+                let oneTimePrice = finalTime * 75;
+                if (services.isEcoFriendly) oneTimePrice *= 1.05;
                 return {
-                    basePrice, surcharge, ecoCharge, totalPrice,
-                    depositAmount: totalPrice / 2,
-                    estimatedTime: finalTime * (avgScore >= 4 ? 1.2 : 1)
+                    oneTime: oneTimePrice,
+                    biWeekly: oneTimePrice * 0.89, // 11% discount
+                    monthly: oneTimePrice * 0.95, // 5% discount
+                    estimatedTime: finalTime
                 };
             };
 
-            const bookAppointment = async (estimatedTime) => {
-                const response = await fetch('/calendar/book', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ estimatedHours: estimatedTime, preferredStartDate: new Date().toISOString() }),
+            const displaySubscriptionOptions = () => {
+                const options = [
+                    { id: 'oneTime', label: 'One-Time Cleaning', price: finalQuote.oneTime, checked: true },
+                    { id: 'biWeekly', label: 'Bi-Weekly (Save 11%)', price: finalQuote.biWeekly },
+                    { id: 'monthly', label: 'Monthly (Save 5%)', price: finalQuote.monthly }
+                ];
+                elements.subscriptionOptions.innerHTML = options.map(opt => `
+                    <label for="${opt.id}" class="block p-4 border rounded-lg cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
+                        <input type="radio" name="subscription" id="${opt.id}" value="${opt.price}" class="sr-only" ${opt.checked ? 'checked' : ''}>
+                        <p class="font-semibold">${opt.label}</p>
+                        <p class="text-2xl font-bold text-gray-800">$${opt.price.toFixed(2)}</p>
+                    </label>
+                `).join('');
+                updateDeposit();
+                elements.subscriptionOptions.addEventListener('change', updateDeposit);
+            };
+
+            const updateDeposit = () => {
+                const selectedPrice = parseFloat(document.querySelector('input[name="subscription"]:checked').value);
+                elements.depositAmount.textContent = `$${(selectedPrice / 2).toFixed(2)}`;
+                window.cleanQuote.finalPrice = selectedPrice;
+            };
+
+            const displayCalendar = async () => {
+                const res = await fetch('/calendar/availability');
+                const availability = await res.json();
+                let calendarHTML = '<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">';
+                Object.entries(availability).forEach(([date, slots]) => {
+                    const d = new Date(date + 'T12:00:00Z');
+                    calendarHTML += `<div><p class="font-bold text-center text-sm mb-2">${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p><div class="space-y-2">`;
+                    if (slots.length > 0) {
+                        slots.forEach(time => {
+                            const slotDateTime = new Date(`${date}T${time}:00`);
+                            calendarHTML += `<button type="button" class="time-slot w-full text-sm py-2 px-1 bg-white border rounded-md hover:bg-blue-100" data-datetime="${slotDateTime.toISOString()}">${slotDateTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</button>`;
+                        });
+                    } else {
+                        calendarHTML += `<p class="text-xs text-center text-gray-400">No slots</p>`;
+                    }
+                    calendarHTML += `</div></div>`;
                 });
-                if (!response.ok) throw new Error('Could not find an available appointment slot.');
-                return await response.json();
+                elements.calendarContainer.innerHTML = calendarHTML + '</div>';
+                elements.calendarContainer.addEventListener('click', handleSlotSelection);
             };
-            
-            const displayQuote = (quote, appointment) => {
-                priceBreakdownEl.innerHTML = `
-                    <div class="flex justify-between items-center text-gray-700">
-                        <span>Base Cleaning Estimate</span>
-                        <span class="font-medium">$${quote.basePrice.toFixed(2)}</span>
-                    </div>
-                    ${quote.surcharge > 0 ? `
-                    <div class="flex justify-between items-center text-gray-700">
-                        <!-- ***UPDATED***: Changed wording to be more transparent -->
-                        <span>Extended Service Time</span>
-                        <span class="font-medium">+$${quote.surcharge.toFixed(2)}</span>
-                    </div>` : ''}
-                    ${quote.ecoCharge > 0 ? `
-                    <div class="flex justify-between items-center text-gray-700">
-                        <span>Eco-Friendly Products</span>
-                        <span class="font-medium">+$${quote.ecoCharge.toFixed(2)}</span>
-                    </div>` : ''}
-                    <div class="flex justify-between items-center text-gray-900 border-t pt-2 mt-2">
-                        <span class="font-bold text-lg">Total</span>
-                        <span class="font-bold text-lg">$${quote.totalPrice.toFixed(2)}</span>
-                    </div>
-                `;
-                depositAmountElement.textContent = `$${quote.depositAmount.toFixed(2)}`;
-                
-                const startDate = new Date(appointment.startTime);
-                bookingText.innerHTML = `Your appointment is tentatively booked for <strong class="font-semibold">${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>.`;
+
+            const handleSlotSelection = (e) => {
+                if (e.target.matches('.time-slot')) {
+                    document.querySelectorAll('.time-slot').forEach(btn => btn.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectedTimeSlot = e.target.dataset.datetime;
+                    elements.payButton.disabled = false;
+                }
             };
-            
-            bookAndPayButton.addEventListener('click', async () => {
-                bookAndPayButton.disabled = true;
-                bookAndPayButton.textContent = 'Redirecting to payment...';
-                
+
+            elements.payButton.addEventListener('click', async () => {
+                elements.payButton.disabled = true;
+                elements.payButton.textContent = 'Booking...';
                 try {
-                    const response = await fetch('/stripe/create-checkout', {
+                    const bookingRes = await fetch('/calendar/book', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            name: window.cleanQuote.customerName,
-                            email: window.cleanQuote.email,
-                            address: window.cleanQuote.address.street,
-                            totalPrice: window.cleanQuote.finalQuote.totalPrice,
-                            depositAmount: window.cleanQuote.finalQuote.depositAmount,
-                        }),
+                        body: JSON.stringify({ startTime: selectedTimeSlot, estimatedHours: finalQuote.estimatedTime }),
                     });
-                    if (response.ok) {
-                        const data = await response.json();
-                        window.location.href = data.checkout_url;
-                    } else { throw new Error('Failed to create a Stripe checkout session.'); }
+                    if (!bookingRes.ok) throw new Error('Selected time slot is no longer available.');
+                    window.cleanQuote.bookingDetails = await bookingRes.json();
+                    
+                    const stripeRes = await fetch('/stripe/create-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ depositAmount: window.cleanQuote.finalPrice / 2 }),
+                    });
+                    if (!stripeRes.ok) throw new Error('Failed to create payment session.');
+                    const { checkout_url } = await stripeRes.json();
+                    window.location.href = checkout_url;
                 } catch (error) {
-                    alert('There was an error processing your payment. Please try again.');
-                    bookAndPayButton.disabled = false;
-                    bookAndPayButton.textContent = 'Book & Pay Deposit';
+                    alert(error.message);
+                    elements.payButton.disabled = false;
+                    elements.payButton.textContent = 'Book & Pay Deposit';
                 }
             });
         });
