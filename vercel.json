@@ -1,0 +1,8 @@
+ {
+  "rewrites": [
+    { "source": "/property-lookup", "destination": "/api/property-lookup" },
+    { "source": "/calendar/availability", "destination": "/api/calendar/availability" },
+    { "source": "/calendar/book", "destination": "/api/calendar/book" },
+    { "source": "/stripe/create-checkout", "destination": "/api/stripe/create-checkout" }
+  ]
+}
