@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CleanQuote - Step 1</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ***ADDED***: Link to your logo to be used as the favicon -->
+    <link rel="icon" href="images/clean-quote-logo.jpg" type="image/jpeg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -48,6 +50,7 @@
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
     <div id="main-card" class="bg-eggshell-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-md opacity-0 fade-in">
+        <!-- Logo -->
         <div class="text-center mb-6">
             <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto">
         </div>
@@ -115,16 +118,27 @@
             const nextStepContainer = document.getElementById('next-step-container');
             const nextStepButton = document.getElementById('next-step-button');
 
-            const cleanerMap = { /* ... (cleaner data) ... */ };
-            const defaultCleaner = { /* ... (default cleaner) ... */ };
+            const cleanerMap = {
+                '97229': { name: 'Maria S.', photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=Maria', welcome: "Hi, I'm Maria! I'll be your cleaner in the Bethany area.", bio: "With over 5 years of experience, I love making homes shine." },
+                '97006': { name: 'David L.', photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=David', welcome: "Hey there, I'm David. I service the Aloha and Cooper Mountain areas.", bio: "I'm detail-oriented and always bring a positive attitude." },
+                '97007': { name: 'Jessica P.', photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=Jessica', welcome: "Hello, I'm Jessica, your specialist for the Tigard area.", bio: "I specialize in deep cleaning and creating organized spaces." }
+            };
+            const defaultCleaner = { name: 'Our Top Pro', photo: 'https://placehold.co/96x96/E2E8F0/A0AEC0?text=Pro', welcome: "One of our top-rated professionals will service your home.", bio: "Our team is fully vetted, trained, and ready to help." };
 
-            const showMessage = (text, type = 'error') => { /* ... (same as before) ... */ };
+            const showMessage = (text, type = 'error') => {
+                messageBox.textContent = text;
+                messageBox.className = `p-4 mt-4 rounded-lg text-center ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`;
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('slide-up-fade-in');
+            };
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 submitButton.textContent = 'Checking...';
                 submitButton.disabled = true;
-                // ... (resetting UI) ...
+                messageBox.classList.add('hidden');
+                resultsContainer.classList.add('hidden');
+                nextStepContainer.classList.add('hidden');
 
                 const formData = new FormData(form);
                 const address = { street: formData.get('street'), city: formData.get('city'), state: formData.get('state'), zip: formData.get('zip') };
@@ -132,21 +146,32 @@
                 try {
                     const response = await fetch('/property-lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(address) });
                     
-                    if (!response.ok) { /* ... (error handling) ... */ }
+                    if (!response.ok) {
+                        const contentType = response.headers.get("content-type");
+                        let errorText;
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const errorData = await response.json();
+                            errorText = errorData.error || 'Failed to verify property.';
+                        } else {
+                            errorText = await response.text();
+                        }
+                        throw new Error(errorText);
+                    }
                     
                     const data = await response.json();
                     
-                    const successText = `Great! We've found your ${data.bedrooms || 'N/A'} bed, ${data.bathrooms || 'N/A'} bath home with ${data.squareFootage || 'N/A'} sq ft.`;
+                    const beds = data.bedrooms || 'N/A';
+                    const baths = data.bathrooms || 'N/A';
+                    const sqft = data.squareFootage || 'N/A';
+                    const successText = `Great! We've found your ${beds} bed, ${baths} bath home with ${sqft} sq ft.`;
                     showMessage(successText, 'success');
                     
-                    window.cleanQuote.propertyDetails = data;
-                    window.cleanQuote.address = address;
-
-                    // ***FIXED***: Save the data to sessionStorage for the next page.
-                    sessionStorage.setItem('cleanQuoteData', JSON.stringify(window.cleanQuote));
+                    sessionStorage.setItem('cleanQuoteData', JSON.stringify({ propertyDetails: data, address: address }));
 
                     const cleaner = cleanerMap[address.zip] || defaultCleaner;
-                    // ... (displaying cleaner info) ...
+                    document.getElementById('cleaner-photo').src = cleaner.photo;
+                    document.getElementById('cleaner-welcome').textContent = cleaner.welcome;
+                    document.getElementById('cleaner-bio').textContent = cleaner.bio;
 
                     resultsContainer.classList.remove('hidden');
                     resultsContainer.classList.add('slide-up-fade-in');
