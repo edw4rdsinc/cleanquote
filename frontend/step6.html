@@ -51,11 +51,14 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const cleanQuote = window.cleanQuote || {};
-            const bookingData = cleanQuote.bookingDetails || { startTime: new Date().toISOString(), endTime: new Date(new Date().getTime() + 2*3600*1000).toISOString() };
-            const customerName = cleanQuote.customerName || 'Valued Customer';
-            const depositAmount = cleanQuote.finalPrice ? cleanQuote.finalPrice / 2 : 0;
-            const streetAddress = cleanQuote.address?.street || 'Your Home';
+            let cleanQuoteData = {};
+            const storedData = sessionStorage.getItem('cleanQuoteData');
+            if (storedData) { try { cleanQuoteData = JSON.parse(storedData); } catch (e) { console.error("Could not parse session data:", e); } }
+
+            const bookingData = cleanQuoteData.bookingDetails || { startTime: new Date().toISOString(), endTime: new Date(new Date().getTime() + 2*3600*1000).toISOString() };
+            const customerName = cleanQuoteData.customerName || 'Valued Customer';
+            const depositAmount = cleanQuoteData.finalPrice ? cleanQuoteData.finalPrice / 2 : 0;
+            const streetAddress = cleanQuoteData.address?.street || 'Your Home';
 
             document.getElementById('customer-name').textContent = customerName;
             document.getElementById('deposit-paid-display').textContent = `$${depositAmount.toFixed(2)}`;

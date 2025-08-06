@@ -56,7 +56,6 @@
 <body class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-eggshell-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg opacity-0 fade-in">
         <div class="text-center mb-6">
-            <!-- ***UPDATED***: Changed image path to local file -->
             <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto">
         </div>
         <h1 class="text-3xl font-bold text-deep-graphite mb-2 text-center">Customize Your Cleaning</h1>
@@ -142,7 +141,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            window.cleanQuote = window.cleanQuote || {};
+            // ***FIXED***: Load data from sessionStorage first.
+            const storedData = sessionStorage.getItem('cleanQuoteData');
+            if (storedData) {
+                window.cleanQuote = JSON.parse(storedData);
+            } else {
+                window.cleanQuote = {};
+            }
+
             const propertyDetails = window.cleanQuote.propertyDetails || { bedrooms: 3, bathrooms: 2, squareFootage: 1700 };
 
             const form = document.getElementById('services-form');
@@ -214,6 +220,10 @@
                     isEcoFriendly: document.getElementById('eco-friendly').checked
                 };
                 calculateBaseTime();
+                
+                // ***FIXED***: Save the updated data before navigating.
+                sessionStorage.setItem('cleanQuoteData', JSON.stringify(window.cleanQuote));
+
                 window.location.href = 'photo-upload.html';
             });
 
@@ -222,3 +232,4 @@
     </script>
 </body>
 </html>
+
