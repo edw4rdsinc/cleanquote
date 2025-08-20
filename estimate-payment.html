@@ -56,7 +56,6 @@
                 <div class="form-section" style="animation-delay: 0.1s;">
                     <h2 class="text-xl font-bold text-deep-graphite mb-3">1. Your Quote</h2>
                     <div id="price-breakdown" class="bg-gray-50 p-4 rounded-lg space-y-2 mb-4 border"></div>
-                    <!-- *** MODIFIED: Simplified to a single, centered option *** -->
                     <div id="subscription-options" class="flex justify-center"></div>
                 </div>
                 <div class="form-section" style="animation-delay: 0.2s;">
@@ -91,7 +90,7 @@
                     console.error("Could not parse session data:", e);
                 }
             }
-            cleanQuoteData.services = cleanQuoteData.services || { isEcoFriendly: false };
+            cleanQuoteData.services = cleanQuoteData.services || { isEcoFriendly: true };
             cleanQuoteData.photos = cleanQuoteData.photos || {};
             cleanQuoteData.baseEstimatedTime = cleanQuoteData.baseEstimatedTime || 2;
 
@@ -173,7 +172,7 @@
             };
             
             const calculateFinalQuote = () => {
-                const { baseEstimatedTime, cleanlinessScores, services } = cleanQuoteData;
+                const { baseEstimatedTime, cleanlinessScores } = cleanQuoteData;
                 let finalTime = baseEstimatedTime;
                 
                 const basePrice = baseEstimatedTime * 75;
@@ -189,23 +188,15 @@
                 }
                 
                 let subtotal = basePrice + surcharge;
-                let ecoCharge = 0;
+                const totalPrice = subtotal;
 
-                if (services.isEcoFriendly) {
-                    ecoCharge = subtotal * 0.05;
-                }
-                
-                const totalPrice = subtotal + ecoCharge;
-
-                // *** MODIFIED: Simplified the return object ***
                 return {
-                    basePrice, surcharge, ecoCharge, totalPrice,
+                    basePrice, surcharge, totalPrice,
                     estimatedTime: finalTime
                 };
             };
 
             const displaySubscriptionOptions = () => {
-                // *** MODIFIED: Removed other options and renamed the label ***
                 const options = [
                     { id: 'oneTime', label: 'My First Clean', price: finalQuote.totalPrice, checked: true },
                 ];
@@ -227,7 +218,6 @@
                 const selectedPrice = parseFloat(selectedRadio.value);
                 cleanQuoteData.finalPrice = selectedPrice;
 
-                // *** MODIFIED: Removed discount logic as it's no longer needed ***
                 elements.priceBreakdownEl.innerHTML = `
                     <div class="flex justify-between items-center text-gray-700">
                         <span>Base Cleaning Estimate</span>
@@ -237,11 +227,6 @@
                     <div class="flex justify-between items-center text-gray-700">
                         <span>Extended Service Time</span>
                         <span class="font-medium">+$${finalQuote.surcharge.toFixed(2)}</span>
-                    </div>` : ''}
-                    ${finalQuote.ecoCharge > 0 ? `
-                    <div class="flex justify-between items-center text-gray-700">
-                        <span>Eco-Friendly Products</span>
-                        <span class="font-medium">+$${finalQuote.ecoCharge.toFixed(2)}</span>
                     </div>` : ''}
                     <div class="flex justify-between items-center text-deep-graphite border-t pt-2 mt-2">
                         <span class="font-bold text-lg">Your Price</span>
