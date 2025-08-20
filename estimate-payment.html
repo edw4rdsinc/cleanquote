@@ -31,7 +31,8 @@
     <div class="bg-eggshell-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-2xl opacity-0 fade-in">
         <div id="main-content">
             <div class="text-center mb-6">
-               <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto rounded-full">
+                <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto rounded-full">
+            </div>
             <h1 id="main-header" class="text-3xl font-bold text-deep-graphite mb-6 text-center">Your Details</h1>
             <div id="form-container">
                 <p id="form-intro" class="text-deep-graphite opacity-80 text-center mb-6">You're almost there! Just a couple of details to build your quote.</p>
@@ -53,11 +54,11 @@
             </div>
             <div id="results-view" class="hidden space-y-8">
                 <div class="form-section" style="animation-delay: 0.1s;">
-                    <h2 class="text-xl font-bold text-deep-graphite mb-3">1. Your Quote & Frequency</h2>
+                    <h2 class="text-xl font-bold text-deep-graphite mb-3">1. Your Quote</h2>
                     <div id="price-breakdown" class="bg-gray-50 p-4 rounded-lg space-y-2 mb-4 border"></div>
-                    <div id="subscription-options" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                    <!-- *** MODIFIED: Simplified to a single, centered option *** -->
+                    <div id="subscription-options" class="flex justify-center"></div>
                 </div>
-                <!-- *** MODIFIED: Replaced old calendar with embedded Calendly widget *** -->
                 <div class="form-section" style="animation-delay: 0.2s;">
                     <h2 class="text-xl font-bold text-deep-graphite mb-3">2. Schedule Your Cleaning</h2>
                     <div id="calendar-container" class="bg-muted-sky-light rounded-lg">
@@ -66,7 +67,6 @@
                         <!-- Calendly inline widget end -->
                     </div>
                 </div>
-                <!-- *** MODIFIED: Changed deposit logic to a flat $20 *** -->
                 <div class="form-section" style="animation-delay: 0.3s;">
                     <h2 class="text-xl font-bold text-deep-graphite mb-3">3. Confirm and Pay</h2>
                     <div class="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
@@ -133,7 +133,6 @@
                     elements.loading.classList.add('hidden');
                     elements.header.textContent = 'Your Quote is Ready!';
                     elements.results.classList.remove('hidden');
-                    // *** MODIFIED: Enable pay button immediately since Calendly is now used for scheduling ***
                     elements.payButton.disabled = false;
 
                 } catch (error) {
@@ -198,32 +197,26 @@
                 
                 const totalPrice = subtotal + ecoCharge;
 
+                // *** MODIFIED: Simplified the return object ***
                 return {
                     basePrice, surcharge, ecoCharge, totalPrice,
-                    oneTime: totalPrice,
-                    biWeekly: totalPrice * 0.89,
-                    monthly: totalPrice * 0.95,
                     estimatedTime: finalTime
                 };
             };
 
             const displaySubscriptionOptions = () => {
+                // *** MODIFIED: Removed other options and renamed the label ***
                 const options = [
-                    { id: 'oneTime', label: 'One-Time Cleaning', price: finalQuote.oneTime, checked: true },
-                    { id: 'biWeekly', label: 'Bi-Weekly (Save 11%)', price: finalQuote.biWeekly },
-                    { id: 'monthly', label: 'Monthly (Save 5%)', price: finalQuote.monthly }
+                    { id: 'oneTime', label: 'My First Clean', price: finalQuote.totalPrice, checked: true },
                 ];
                 elements.subscriptionOptions.innerHTML = options.map(opt => `
-                    <label for="${opt.id}" class="subscription-option block p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-colors">
+                    <label for="${opt.id}" class="subscription-option block p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-colors w-full sm:w-64 text-center">
                         <input type="radio" name="subscription" id="${opt.id}" value="${opt.price}" class="sr-only" ${opt.checked ? 'checked' : ''}>
                         <p class="font-semibold text-deep-graphite">${opt.label}</p>
                         <p class="text-2xl font-bold text-deep-graphite">$${opt.price.toFixed(2)}</p>
                     </label>
                 `).join('');
                 
-                // *** MODIFIED: This now only calls displayPriceBreakdown, as the deposit is static ***
-                elements.subscriptionOptions.addEventListener('change', displayPriceBreakdown);
-                // Initial call to set the price breakdown
                 displayPriceBreakdown();
             };
             
@@ -232,16 +225,9 @@
                 if (!selectedRadio) return;
 
                 const selectedPrice = parseFloat(selectedRadio.value);
-                cleanQuoteData.finalPrice = selectedPrice; // Update data object with the selected total price
+                cleanQuoteData.finalPrice = selectedPrice;
 
-                const selectedFrequency = selectedRadio.id;
-                let discount = 0;
-                if (selectedFrequency === 'biWeekly') {
-                    discount = finalQuote.totalPrice - finalQuote.biWeekly;
-                } else if (selectedFrequency === 'monthly') {
-                    discount = finalQuote.totalPrice - finalQuote.monthly;
-                }
-
+                // *** MODIFIED: Removed discount logic as it's no longer needed ***
                 elements.priceBreakdownEl.innerHTML = `
                     <div class="flex justify-between items-center text-gray-700">
                         <span>Base Cleaning Estimate</span>
@@ -257,11 +243,6 @@
                         <span>Eco-Friendly Products</span>
                         <span class="font-medium">+$${finalQuote.ecoCharge.toFixed(2)}</span>
                     </div>` : ''}
-                    ${discount > 0 ? `
-                    <div class="flex justify-between items-center text-green-600">
-                        <span>Frequency Discount</span>
-                        <span class="font-medium">-$${discount.toFixed(2)}</span>
-                    </div>` : ''}
                     <div class="flex justify-between items-center text-deep-graphite border-t pt-2 mt-2">
                         <span class="font-bold text-lg">Your Price</span>
                         <span class="font-bold text-lg">$${cleanQuoteData.finalPrice.toFixed(2)}</span>
@@ -269,11 +250,8 @@
                 `;
             };
 
-            // *** MODIFIED: Replaced pay button logic with Stripe link ***
             elements.payButton.addEventListener('click', () => {
-                // Save the final quote details to session storage before redirecting
                 sessionStorage.setItem('cleanQuoteData', JSON.stringify(cleanQuoteData));
-                // Open the Stripe payment link in a new tab
                 window.open('https://buy.stripe.com/fZu7sL2fB1qS1a91Zv2oE00', '_blank');
             });
         });
