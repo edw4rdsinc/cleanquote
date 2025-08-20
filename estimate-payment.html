@@ -114,6 +114,19 @@
                 cleanQuoteData.customerName = document.getElementById('customer-name').value;
                 cleanQuoteData.email = document.getElementById('email').value;
                 
+                // *** ADDED: Webhook call to n8n ***
+                try {
+                    const webhookUrl = 'https://n8n.edw4rds.com/webhook/3bf59335-5d39-4526-a2f7-ac7a711ed4c0';
+                    await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cleanQuoteData),
+                    });
+                } catch (error) {
+                    console.error('Webhook call failed:', error);
+                    // This will not block the user, but you'll see the error in the console.
+                }
+
                 elements.formContainer.classList.add('hidden');
                 document.getElementById('form-intro').classList.add('hidden');
                 elements.header.textContent = 'Building Your Custom Quote...';
