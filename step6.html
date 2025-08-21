@@ -45,46 +45,47 @@
             </div>
         </div>
 
-        <div class="mt-8 space-y-4 form-section" style="animation-delay: 0.3s;">
-            <button id="add-to-calendar-button" class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors">Add to Calendar</button>
+        <div class="mt-8 text-center form-section" style="animation-delay: 0.3s;">
+             <p class="text-sm text-gray-500">You'll receive an email confirmation shortly.</p>
         </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Read booking data from Calendly redirect URL ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const calendlyFullName = urlParams.get('invitee_full_name');
+            const calendlyStartTime = urlParams.get('event_start_time');
+            const calendlyEndTime = urlParams.get('event_end_time');
+
+            // --- Get quote data from session storage ---
             let cleanQuoteData = {};
             const storedData = sessionStorage.getItem('cleanQuoteData');
             if (storedData) { try { cleanQuoteData = JSON.parse(storedData); } catch (e) { console.error("Could not parse session data:", e); } }
 
-            const bookingData = cleanQuoteData.bookingDetails || { startTime: new Date().toISOString(), endTime: new Date(new Date().getTime() + 2*3600*1000).toISOString() };
-            const customerName = cleanQuoteData.customerName || 'Valued Customer';
-            const depositAmount = cleanQuoteData.finalPrice ? cleanQuoteData.finalPrice / 2 : 0;
-            const streetAddress = cleanQuoteData.address?.street || 'Your Home';
+            // --- Use Calendly data if available, otherwise fall back to session data or defaults ---
+            const customerName = calendlyFullName || cleanQuoteData.customerName || 'Valued Customer';
+            
+            // Use precise start and end times from Calendly for accuracy
+            const startDate = calendlyStartTime ? new Date(calendlyStartTime) : new Date();
+            const endDate = calendlyEndTime ? new Date(calendlyEndTime) : new Date(new Date().getTime() + 2 * 3600 * 1000);
 
+            // --- Populate the page with the final data ---
             document.getElementById('customer-name').textContent = customerName;
-            document.getElementById('deposit-paid-display').textContent = `$${depositAmount.toFixed(2)}`;
+            document.getElementById('deposit-paid-display').textContent = '$20.00'; // Deposit is fixed
             
-            const startDate = new Date(bookingData.startTime);
-            const endDate = new Date(bookingData.endTime);
-            
+            // Formatters for displaying dates and times nicely
             const dateFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'full' });
             const dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
             const timeFormatterShort = new Intl.DateTimeFormat('en-US', { timeStyle: 'short' });
-            const timeFormatterRange = new Intl.DateTimeFormat('en-US', { timeStyle: 'short' });
 
             document.getElementById('booking-date-display').textContent = dateFormatter.format(startDate);
-            document.getElementById('booking-time-display').textContent = `${timeFormatterRange.format(startDate)} - ${timeFormatterRange.format(endDate)}`;
+            document.getElementById('booking-time-display').textContent = `${timeFormatterShort.format(startDate)} - ${timeFormatterShort.format(endDate)}`;
             
+            // Create a personalized message
             const dayOfWeek = dayFormatter.format(startDate);
             const timeOfDay = timeFormatterShort.format(startDate);
-            document.getElementById('personalized-message').textContent = `Thank you, ${customerName}! Jamie is excited to make your home sparkle on ${dayOfWeek} at ${timeOfDay}.`;
+            document.getElementById('personalized-message').textContent = `Thank you, ${customerName}! We're excited to make your home sparkle on ${dayOfWeek} at ${timeOfDay}.`;
             
-            document.getElementById('add-to-calendar-button').addEventListener('click', () => {
-                const formatDate = (date) => date.toISOString().replace(/-|:|\.\d{3}/g, '');
-                const title = `Home Cleaning: ${streetAddress}`;
-                const details = `Your cleaning appointment with Simple Home.`;
-                const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(streetAddress)}`;
-                window.open(url, '_blank');
-            });
         });
     </script>
 </body>
