@@ -34,6 +34,8 @@
                 <img src="images/clean-quote-logo.jpg" alt="CleanQuote Logo" class="w-24 h-24 mx-auto rounded-full">
             </div>
             <h1 id="main-header" class="text-3xl font-bold text-deep-graphite mb-6 text-center">Your Details</h1>
+            
+            <!-- Step 1: Customer Info Form -->
             <div id="form-container">
                 <p id="form-intro" class="text-deep-graphite opacity-80 text-center mb-6">You're almost there! Just a couple of details to build your quote.</p>
                 <form id="customer-info-form" class="space-y-4 mb-8">
@@ -48,10 +50,14 @@
                     <button type="submit" class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors">Build My Quote</button>
                 </form>
             </div>
+
+            <!-- Loading Spinner -->
             <div id="loading-view" class="hidden flex flex-col items-center justify-center space-y-4">
                 <div class="spinner"></div>
                 <p id="loading-subtext" class="text-sm text-gray-500">Getting started...</p>
             </div>
+
+            <!-- Step 2: Quote & Payment -->
             <div id="results-view" class="hidden space-y-8">
                 <div class="form-section" style="animation-delay: 0.1s;">
                     <h2 class="text-xl font-bold text-deep-graphite mb-3">1. Your Quote</h2>
@@ -59,22 +65,25 @@
                     <div id="subscription-options" class="flex justify-center"></div>
                 </div>
                 <div class="form-section" style="animation-delay: 0.2s;">
-                    <h2 class="text-xl font-bold text-deep-graphite mb-3">2. Schedule Your Cleaning</h2>
-                    <div id="calendar-container" class="bg-muted-sky-light rounded-lg">
-                         <!-- Calendly inline widget begin -->
-                        <div class="calendly-inline-widget" data-url="https://calendly.com/d/cs3v-9jb-w2g/bethany-clean-quote-booking" style="min-width:320px;height:630px;"></div>
-                        <!-- Calendly inline widget end -->
-                    </div>
-                </div>
-                <div class="form-section" style="animation-delay: 0.3s;">
-                    <h2 class="text-xl font-bold text-deep-graphite mb-3">3. Confirm and Pay</h2>
+                    <h2 class="text-xl font-bold text-deep-graphite mb-3">2. Confirm and Pay</h2>
                     <div class="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
                         <span class="text-lg font-semibold text-deep-graphite">Booking Deposit:</span>
                         <span id="deposit-amount" class="text-2xl font-bold text-green-600">$20.00</span>
                     </div>
                 </div>
-                <button id="book-and-pay-button" disabled class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors disabled:bg-gray-300 disabled:opacity-60 disabled:cursor-not-allowed form-section" style="animation-delay: 0.4s;">Book & Pay $20 Deposit</button>
+                <button id="book-and-pay-button" disabled class="w-full bg-warm-sand text-deep-graphite font-semibold py-3 rounded-lg shadow-md hover:bg-warm-sand-dark transition-colors disabled:bg-gray-300 disabled:opacity-60 disabled:cursor-not-allowed form-section" style="animation-delay: 0.3s;">Book & Pay $20 Deposit</button>
             </div>
+
+            <!-- Step 3: Scheduling -->
+            <div id="scheduling-view" class="hidden space-y-6">
+                 <p class="text-center text-deep-graphite opacity-90">Great! Your deposit is paid. Now let's get you on the calendar.</p>
+                 <div id="calendar-container" class="bg-muted-sky-light rounded-lg">
+                    <!-- Calendly inline widget begin -->
+                    <div class="calendly-inline-widget" data-url="https://calendly.com/d/cs3v-9jb-w2g/bethany-clean-quote-booking" style="min-width:320px;height:630px;"></div>
+                    <!-- Calendly inline widget end -->
+                </div>
+            </div>
+
         </div>
     </div>
     <!-- Calendly widget JS -->
@@ -104,6 +113,7 @@
                 loading: document.getElementById('loading-view'),
                 loadingSubtext: document.getElementById('loading-subtext'),
                 results: document.getElementById('results-view'),
+                scheduling: document.getElementById('scheduling-view'),
                 subscriptionOptions: document.getElementById('subscription-options'),
                 priceBreakdownEl: document.getElementById('price-breakdown'),
                 payButton: document.getElementById('book-and-pay-button'),
@@ -114,7 +124,6 @@
                 cleanQuoteData.customerName = document.getElementById('customer-name').value;
                 cleanQuoteData.email = document.getElementById('email').value;
                 
-                // *** ADDED: Webhook call to n8n ***
                 try {
                     const webhookUrl = 'https://n8n.edw4rds.com/webhook/3bf59335-5d39-4526-a2f7-ac7a711ed4c0';
                     await fetch(webhookUrl, {
@@ -124,7 +133,6 @@
                     });
                 } catch (error) {
                     console.error('Webhook call failed:', error);
-                    // This will not block the user, but you'll see the error in the console.
                 }
 
                 elements.formContainer.classList.add('hidden');
@@ -249,8 +257,14 @@
             };
 
             elements.payButton.addEventListener('click', () => {
+                // 1. Save data and open payment link
                 sessionStorage.setItem('cleanQuoteData', JSON.stringify(cleanQuoteData));
                 window.open('https://buy.stripe.com/fZu7sL2fB1qS1a91Zv2oE00', '_blank');
+
+                // 2. Change the view to scheduling
+                elements.results.classList.add('hidden');
+                elements.header.textContent = 'Schedule Your Cleaning';
+                elements.scheduling.classList.remove('hidden');
             });
         });
     </script>
